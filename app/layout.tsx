@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "Integra Estágio | Mirassol d'Oeste",
   description:
     "Programa de Estágio Curricular Supervisionado de Mirassol d'Oeste.",
+  icons: {
+    icon: "/branding/logo-symbol.png",
+    shortcut: "/branding/logo-symbol.png",
+    apple: "/branding/logo-symbol.png",
+  },
 };
 
 export default function RootLayout({

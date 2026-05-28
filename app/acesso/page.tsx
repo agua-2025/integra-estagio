@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicHeader } from "@/components/public/PublicHeader";
@@ -36,7 +37,20 @@ export default function AcessoPage() {
 
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
+          <div className="flex justify-center">
+            <div className="rounded-3xl border border-slate-200 bg-white px-8 py-6 shadow-sm">
+              <Image
+                src="/branding/logo-horizontal.png"
+                alt="Integra Estágio"
+                width={520}
+                height={170}
+                priority
+                className="h-20 w-auto sm:h-24"
+              />
+            </div>
+          </div>
+
+          <p className="mt-8 text-sm font-semibold uppercase tracking-wide text-teal-700">
             Acesso ao sistema
           </p>
 
