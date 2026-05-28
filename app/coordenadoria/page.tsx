@@ -1,31 +1,56 @@
-import { PanelCard } from "@/components/system/PanelCard";
-import { SystemHeader } from "@/components/system/SystemHeader";
+import { ActionCard } from "@/components/system/ActionCard";
+import { SummaryCard } from "@/components/system/SummaryCard";
+import { SystemShell } from "@/components/system/SystemShell";
+
+const summaries = [
+  {
+    label: "Sondagens",
+    value: "0",
+    description: "Consultas recebidas para análise de campo.",
+  },
+  {
+    label: "Pendências",
+    value: "0",
+    description: "Processos aguardando documento ou manifestação.",
+  },
+  {
+    label: "Acordos",
+    value: "0",
+    description: "Acordos em análise, assinatura ou vigência.",
+  },
+  {
+    label: "Estágios",
+    value: "0",
+    description: "Estágios autorizados ou em acompanhamento.",
+  },
+];
 
 const actions = [
   {
     title: "Analisar sondagens",
     description:
       "Receba consultas de instituições e encaminhe às unidades municipais para manifestação sobre disponibilidade de campo.",
+    status: "Entrada",
   },
   {
     title: "Consolidar viabilidade",
     description:
-      "Organize as respostas das unidades e informe se há possibilidade total, parcial ou inexistente para o estágio solicitado.",
+      "Organize as respostas das unidades e informe se há possibilidade total, parcial ou inexistente.",
   },
   {
-    title: "Acordos de Cooperação",
+    title: "Controlar Acordos de Cooperação",
     description:
-      "Analise pedidos, gere minutas, acompanhe assinaturas, registre publicações e controle a vigência dos acordos.",
+      "Analise pedidos, gere minutas, acompanhe assinaturas, registre publicações e controle vigências.",
   },
   {
-    title: "Validar documentos",
+    title: "Validar documentos individuais",
     description:
-      "Confira carta de apresentação, termo de compromisso, seguro e demais documentos individuais dos estudantes.",
+      "Confira carta de apresentação, termo de compromisso, seguro e demais documentos do estudante.",
   },
   {
     title: "Autorizar início",
     description:
-      "Libere o início do estágio somente após validação completa da documentação, campo, supervisor e unidade.",
+      "Libere o início do estágio somente após validação completa da documentação e indicação da unidade.",
   },
   {
     title: "Relatórios e auditoria",
@@ -36,34 +61,33 @@ const actions = [
 
 export default function CoordenadoriaAreaPage() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <SystemHeader />
+    <SystemShell
+      areaLabel="Área da Coordenadoria"
+      title="Controle central do fluxo"
+      description="Ambiente responsável por analisar solicitações, consultar unidades, controlar acordos, validar documentos e autorizar o início dos estágios."
+    >
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        {summaries.map((item) => (
+          <SummaryCard key={item.label} {...item} />
+        ))}
+      </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
-            Área da Coordenadoria
-          </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-            Controle central do fluxo de estágio curricular supervisionado.
-          </h1>
-          <p className="mt-4 max-w-3xl leading-7 text-slate-600">
-            A Coordenadoria será responsável por analisar documentos, encaminhar
-            solicitações às unidades, controlar acordos, validar processos
-            individuais e autorizar o início dos estágios.
+      <section className="mt-8">
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+            Gestão do processo
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Acompanhe as etapas sob responsabilidade da Coordenadoria.
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {actions.map((item) => (
-            <PanelCard
-              key={item.title}
-              title={item.title}
-              description={item.description}
-            />
+            <ActionCard key={item.title} {...item} />
           ))}
         </div>
       </section>
-    </main>
+    </SystemShell>
   );
 }

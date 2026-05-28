@@ -1,16 +1,36 @@
-import { PanelCard } from "@/components/system/PanelCard";
-import { SystemHeader } from "@/components/system/SystemHeader";
+import { ActionCard } from "@/components/system/ActionCard";
+import { SummaryCard } from "@/components/system/SummaryCard";
+import { SystemShell } from "@/components/system/SystemShell";
+
+const summaries = [
+  {
+    label: "Situação",
+    value: "Pendente",
+    description: "Aguardando vínculo com uma solicitação de estágio.",
+  },
+  {
+    label: "Documentos",
+    value: "0",
+    description: "Documentos disponíveis para consulta.",
+  },
+  {
+    label: "Carga horária",
+    value: "0h",
+    description: "Carga horária registrada ou prevista no estágio.",
+  },
+];
 
 const actions = [
   {
     title: "Acompanhar solicitação",
     description:
       "Consulte a situação do processo encaminhado pela instituição de ensino e validado pelo Município.",
+    status: "Consulta",
   },
   {
     title: "Visualizar documentos",
     description:
-      "Acesse carta de apresentação, termo de compromisso, plano de atividades e demais documentos vinculados ao estágio.",
+      "Acesse carta de apresentação, termo de compromisso, plano de atividades e documentos vinculados.",
   },
   {
     title: "Consultar orientações",
@@ -18,42 +38,41 @@ const actions = [
       "Veja informações importantes sobre início, acompanhamento, conduta e encerramento do estágio.",
   },
   {
-    title: "Carga horária e período",
+    title: "Dados do estágio",
     description:
-      "Acompanhe dados do estágio, unidade concedente, supervisor, período previsto e carga horária.",
+      "Acompanhe unidade concedente, supervisor, período previsto e carga horária do estágio.",
   },
 ];
 
 export default function EstagiarioAreaPage() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <SystemHeader />
+    <SystemShell
+      areaLabel="Área do Estagiário"
+      title="Acompanhamento da jornada"
+      description="Ambiente do estagiário para consultar situação, documentos, orientações e informações sobre o estágio curricular supervisionado."
+    >
+      <div className="grid gap-5 md:grid-cols-3">
+        {summaries.map((item) => (
+          <SummaryCard key={item.label} {...item} />
+        ))}
+      </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
-            Área do Estagiário
-          </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-            Acompanhamento simples da jornada de estágio.
-          </h1>
-          <p className="mt-4 max-w-3xl leading-7 text-slate-600">
-            O estagiário poderá acompanhar a situação do processo, consultar
-            documentos, verificar orientações e visualizar informações sobre a
-            unidade, supervisor e período do estágio.
+      <section className="mt-8">
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+            Minha jornada
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Acompanhe documentos, orientações e informações sobre o estágio.
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           {actions.map((item) => (
-            <PanelCard
-              key={item.title}
-              title={item.title}
-              description={item.description}
-            />
+            <ActionCard key={item.title} {...item} />
           ))}
         </div>
       </section>
-    </main>
+    </SystemShell>
   );
 }

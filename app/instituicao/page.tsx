@@ -1,21 +1,41 @@
-import { PanelCard } from "@/components/system/PanelCard";
-import { SystemHeader } from "@/components/system/SystemHeader";
+import { ActionCard } from "@/components/system/ActionCard";
+import { SummaryCard } from "@/components/system/SummaryCard";
+import { SystemShell } from "@/components/system/SystemShell";
+
+const summaries = [
+  {
+    label: "Consultas",
+    value: "0",
+    description: "Sondagens de campo enviadas pela instituição.",
+  },
+  {
+    label: "Acordos",
+    value: "0",
+    description: "Acordos de cooperação em análise ou ativos.",
+  },
+  {
+    label: "Estudantes",
+    value: "0",
+    description: "Estudantes apresentados ao Município.",
+  },
+];
 
 const actions = [
   {
     title: "Consultar campo de estágio",
     description:
-      "Solicite ao Município a análise de disponibilidade de campo para cursos e estudantes da instituição.",
+      "Informe curso, quantidade estimada, carga horária e período pretendido para análise de viabilidade.",
+    status: "Primeiro passo",
   },
   {
     title: "Acompanhar sondagens",
     description:
-      "Veja o andamento das consultas encaminhadas, respostas da Coordenadoria e manifestações das unidades municipais.",
+      "Veja o andamento das consultas encaminhadas, respostas da Coordenadoria e manifestações das unidades.",
   },
   {
-    title: "Acordos de Cooperação",
+    title: "Solicitar Acordo de Cooperação",
     description:
-      "Solicite, acompanhe e consulte os acordos de cooperação técnica firmados com o Município.",
+      "Após viabilidade positiva, formalize o pedido de cooperação institucional com o Município.",
   },
   {
     title: "Apresentar estudantes",
@@ -26,34 +46,33 @@ const actions = [
 
 export default function InstituicaoAreaPage() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <SystemHeader />
+    <SystemShell
+      areaLabel="Área da Instituição de Ensino"
+      title="Consultas, cooperação e estudantes"
+      description="Ambiente destinado às instituições de ensino para consultar campos de estágio, formalizar cooperação e acompanhar os estudantes encaminhados."
+    >
+      <div className="grid gap-5 md:grid-cols-3">
+        {summaries.map((item) => (
+          <SummaryCard key={item.label} {...item} />
+        ))}
+      </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
-            Área da Instituição de Ensino
-          </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-            Consultas, cooperação e apresentação de estudantes.
-          </h1>
-          <p className="mt-4 max-w-3xl leading-7 text-slate-600">
-            Este ambiente será utilizado pelas instituições de ensino para iniciar
-            sondagens de campo, acompanhar a viabilidade, formalizar cooperação e
-            encaminhar estudantes para estágio curricular supervisionado.
+      <section className="mt-8">
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+            Próximas ações
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Selecione a ação correspondente à etapa da instituição.
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           {actions.map((item) => (
-            <PanelCard
-              key={item.title}
-              title={item.title}
-              description={item.description}
-            />
+            <ActionCard key={item.title} {...item} />
           ))}
         </div>
       </section>
-    </main>
+    </SystemShell>
   );
 }

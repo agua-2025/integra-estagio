@@ -1,11 +1,31 @@
-import { PanelCard } from "@/components/system/PanelCard";
-import { SystemHeader } from "@/components/system/SystemHeader";
+import { ActionCard } from "@/components/system/ActionCard";
+import { SummaryCard } from "@/components/system/SummaryCard";
+import { SystemShell } from "@/components/system/SystemShell";
+
+const summaries = [
+  {
+    label: "Sondagens",
+    value: "0",
+    description: "Solicitações aguardando manifestação da unidade.",
+  },
+  {
+    label: "Campos",
+    value: "0",
+    description: "Campos de estágio informados pela unidade.",
+  },
+  {
+    label: "Estudantes",
+    value: "0",
+    description: "Estagiários autorizados para acompanhamento.",
+  },
+];
 
 const actions = [
   {
     title: "Responder sondagens",
     description:
       "Informe se a unidade possui condições de receber estudantes para determinado curso e período.",
+    status: "Prioridade",
   },
   {
     title: "Definir campo de estágio",
@@ -15,12 +35,12 @@ const actions = [
   {
     title: "Indicar supervisor",
     description:
-      "Informe o servidor responsável pela orientação e acompanhamento do estudante na unidade municipal.",
+      "Informe o servidor responsável pela orientação e acompanhamento do estudante na unidade.",
   },
   {
     title: "Acompanhar estudantes",
     description:
-      "Consulte os estágios autorizados na unidade e acompanhe o desenvolvimento das atividades.",
+      "Consulte os estágios autorizados e acompanhe o desenvolvimento das atividades na unidade.",
   },
   {
     title: "Registrar ocorrências",
@@ -30,40 +50,39 @@ const actions = [
   {
     title: "Relatório final",
     description:
-      "Registre informações para encerramento do estágio, atividades desenvolvidas e avaliação resumida.",
+      "Registre informações para encerramento, atividades desenvolvidas e avaliação resumida.",
   },
 ];
 
 export default function UnidadeAreaPage() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <SystemHeader />
+    <SystemShell
+      areaLabel="Área da Unidade Municipal"
+      title="Campo, supervisão e acompanhamento"
+      description="Ambiente das unidades municipais para informar disponibilidade, indicar supervisores e acompanhar estudantes autorizados."
+    >
+      <div className="grid gap-5 md:grid-cols-3">
+        {summaries.map((item) => (
+          <SummaryCard key={item.label} {...item} />
+        ))}
+      </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
-            Área da Unidade Municipal
-          </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
-            Disponibilidade, supervisão e acompanhamento dos estudantes.
-          </h1>
-          <p className="mt-4 max-w-3xl leading-7 text-slate-600">
-            As unidades municipais informarão se possuem campo de estágio,
-            indicarão supervisores e acompanharão os estudantes autorizados
-            durante a vivência prática.
+      <section className="mt-8">
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+            Atividades da unidade
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            A unidade participa informando viabilidade, supervisor e acompanhamento.
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {actions.map((item) => (
-            <PanelCard
-              key={item.title}
-              title={item.title}
-              description={item.description}
-            />
+            <ActionCard key={item.title} {...item} />
           ))}
         </div>
       </section>
-    </main>
+    </SystemShell>
   );
 }
