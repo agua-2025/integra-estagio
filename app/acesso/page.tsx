@@ -35,19 +35,17 @@ export default function AcessoPage() {
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <PublicHeader />
 
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section className="mx-auto max-w-7xl px-6 py-14">
         <div className="mx-auto max-w-3xl text-center">
           <div className="flex justify-center">
-            <div className="rounded-3xl border border-slate-200 bg-white px-8 py-6 shadow-sm">
-              <Image
-                src="/branding/logo-horizontal.png"
-                alt="Integra Estágio"
-                width={520}
-                height={170}
-                priority
-                className="h-20 w-auto sm:h-24"
-              />
-            </div>
+            <Image
+              src="/branding/logo-stacked.png"
+              alt="Integra Estágio"
+              width={1600}
+              height={1600}
+              priority
+              className="h-44 w-auto sm:h-52"
+            />
           </div>
 
           <p className="mt-8 text-sm font-semibold uppercase tracking-wide text-teal-700">

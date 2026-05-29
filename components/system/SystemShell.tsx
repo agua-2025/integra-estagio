@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   Building2,
@@ -28,25 +29,27 @@ export function SystemShell({
 }: SystemShellProps) {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="grid min-h-screen lg:grid-cols-[280px_1fr]">
+      <div className="grid min-h-screen lg:grid-cols-[300px_1fr]">
         <aside className="border-r border-slate-200 bg-white">
           <div className="flex h-full flex-col px-5 py-5">
             <Link
               href="/"
-              className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              className="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 shadow-sm transition hover:border-teal-200"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-600 to-sky-700 text-lg font-black text-white shadow-sm">
-                IE
+              <div className="relative h-16 w-full">
+                <Image
+                  src="/branding/logo-header.png"
+                  alt="Integra Estágio"
+                  fill
+                  priority
+                  sizes="240px"
+                  className="object-contain object-center"
+                />
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
-                  Sistema
-                </p>
-                <h1 className="mt-1 text-lg font-bold tracking-tight text-slate-950">
-                  Integra Estágio
-                </h1>
-              </div>
+              <p className="mt-3 text-center text-xs font-medium text-slate-500">
+                Gestão de Estágios
+              </p>
             </Link>
 
             <nav className="mt-6 grid gap-2">

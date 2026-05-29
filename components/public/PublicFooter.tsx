@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const quickLinks = [
@@ -24,20 +25,13 @@ export function PublicFooter() {
     <footer className="border-t border-slate-200 bg-white">
       <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-600 to-sky-700 text-lg font-black text-white shadow-sm">
-              IE
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
-                Integra Estágio
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-950">
-                Programa de Estágio Curricular Supervisionado
-              </h2>
-            </div>
-          </div>
+          <Image
+            src="/branding/logo-horizontal.png"
+            alt="Integra Estágio"
+            width={2400}
+            height={800}
+            className="h-24 w-auto sm:h-28"
+          />
 
           <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600">
             Ambiente digital para organização, formalização e acompanhamento dos
