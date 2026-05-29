@@ -6,9 +6,15 @@ export const metadata: Metadata = {
   description:
     "Programa de Estágio Curricular Supervisionado de Mirassol d'Oeste.",
   icons: {
-    icon: "/branding/favicon.png",
-    shortcut: "/branding/favicon.png",
-    apple: "/branding/favicon.png",
+    icon: [
+      {
+        url: "/branding/favicon.png?v=2",
+        type: "image/png",
+        sizes: "512x512",
+      },
+    ],
+    shortcut: "/branding/favicon.png?v=2",
+    apple: "/branding/favicon.png?v=2",
   },
 };
 
