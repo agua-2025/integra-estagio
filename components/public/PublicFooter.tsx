@@ -22,30 +22,33 @@ const systemAreas = [
 
 export function PublicFooter() {
   return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
+    <footer className="border-t border-white/10 bg-slate-950 text-white">
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-12 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
         <div>
-          <Image
-            src="/branding/logo-horizontal.png"
-            alt="Integra Estágio"
-            width={2400}
-            height={800}
-            className="h-24 w-auto sm:h-28"
-          />
+          <div className="inline-flex rounded-2xl border border-white/10 bg-white px-3.5 py-2.5 shadow-sm">
+            <Image
+              src="/branding/logo-header.png"
+              alt="Integra Estágio"
+              width={2400}
+              height={660}
+              className="h-11 w-auto sm:h-12"
+            />
+          </div>
 
-          <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600">
-            Ambiente digital para organização, formalização e acompanhamento dos
-            estágios curriculares supervisionados realizados nos órgãos e
-            unidades da Administração Municipal de Mirassol d&apos;Oeste.
+          <p className="mt-5 max-w-xl text-sm leading-6 text-slate-300">
+            Programa de Estágio Curricular Supervisionado de Mirassol
+            d&apos;Oeste. Ambiente digital para organização, formalização e
+            acompanhamento dos estágios realizados nos órgãos e unidades da
+            Administração Municipal.
           </p>
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-slate-950">Acesso rápido</h3>
-          <ul className="mt-3 space-y-2 text-sm text-slate-600">
+          <h3 className="text-sm font-bold text-white">Acesso rápido</h3>
+          <ul className="mt-4 space-y-2 text-sm text-slate-300">
             {quickLinks.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="hover:text-teal-700">
+                <Link href={item.href} className="hover:text-teal-300">
                   {item.label}
                 </Link>
               </li>
@@ -54,8 +57,8 @@ export function PublicFooter() {
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-slate-950">Sistema</h3>
-          <ul className="mt-3 space-y-2 text-sm text-slate-600">
+          <h3 className="text-sm font-bold text-white">Sistema</h3>
+          <ul className="mt-4 space-y-2 text-sm text-slate-300">
             {systemAreas.map((item) => (
               <li key={item}>{item}</li>
             ))}
@@ -63,14 +66,14 @@ export function PublicFooter() {
 
           <Link
             href="/acesso"
-            className="mt-5 inline-flex rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
+            className="mt-5 inline-flex rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-500"
           >
             Acessar sistema
           </Link>
         </div>
       </div>
 
-      <div className="border-t border-slate-200 px-6 py-4 text-center text-xs text-slate-500">
+      <div className="border-t border-white/10 px-6 py-4 text-center text-xs text-slate-400">
         © {new Date().getFullYear()} Município de Mirassol d&apos;Oeste. Todos
         os direitos reservados.
       </div>
