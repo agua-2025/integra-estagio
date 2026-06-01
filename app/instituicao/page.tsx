@@ -23,11 +23,6 @@ const summaries = [
 
 const actions = [
   {
-    title: "Acompanhar sondagens",
-    description:
-      "Veja o andamento das consultas encaminhadas, respostas da Coordenadoria e manifestações das unidades.",
-  },
-  {
     title: "Solicitar Acordo de Cooperação",
     description:
       "Após viabilidade positiva, formalize o pedido de cooperação institucional com o Município.",
@@ -79,6 +74,25 @@ export default function InstituicaoAreaPage() {
             <p className="mt-3 text-sm leading-6 text-slate-600">
               Informe curso, quantidade estimada, carga horária e período
               pretendido para análise de viabilidade.
+            </p>
+          </Link>
+
+          <Link
+            href="/instituicao/sondagens"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Acompanhar sondagens
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Andamento
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Veja o andamento das consultas encaminhadas, respostas da
+              Coordenadoria e manifestações das unidades.
             </p>
           </Link>
 
