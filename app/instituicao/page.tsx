@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActionCard } from "@/components/system/ActionCard";
 import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
@@ -21,12 +22,6 @@ const summaries = [
 ];
 
 const actions = [
-  {
-    title: "Consultar campo de estágio",
-    description:
-      "Informe curso, quantidade estimada, carga horária e período pretendido para análise de viabilidade.",
-    status: "Primeiro passo",
-  },
   {
     title: "Acompanhar sondagens",
     description:
@@ -68,6 +63,25 @@ export default function InstituicaoAreaPage() {
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
+          <Link
+            href="/instituicao/consultar-campo"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Consultar campo de estágio
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Primeiro passo
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Informe curso, quantidade estimada, carga horária e período
+              pretendido para análise de viabilidade.
+            </p>
+          </Link>
+
           {actions.map((item) => (
             <ActionCard key={item.title} {...item} />
           ))}
