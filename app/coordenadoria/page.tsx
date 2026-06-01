@@ -39,11 +39,6 @@ const actions = [
       "Organize as respostas das unidades e informe se há possibilidade total, parcial ou inexistente.",
   },
   {
-    title: "Controlar Acordos de Cooperação",
-    description:
-      "Analise pedidos, gere minutas, acompanhe assinaturas, registre publicações e controle vigências.",
-  },
-  {
     title: "Validar documentos individuais",
     description:
       "Confira carta de apresentação, termo de compromisso, seguro e demais documentos do estudante.",
@@ -79,39 +74,74 @@ export default function CoordenadoriaAreaPage() {
             Configurações principais
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Organize as bases do sistema antes de liberar os fluxos para as instituições e unidades.
+            Organize as bases do sistema antes de liberar os fluxos para as
+            instituições e unidades.
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <Link
             href="/coordenadoria/campos-estagio"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
                   Campos de Estágio
                 </h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Cadastre, edite, publique ou suspenda áreas e unidades que poderão receber estágio curricular supervisionado.
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Cadastre, edite, publique ou suspenda áreas e unidades
+                  disponíveis.
                 </p>
               </div>
 
-              <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
                 Configurar
               </span>
             </div>
           </Link>
 
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6">
-            <h3 className="text-lg font-bold text-slate-950">
-              Instituições e cursos
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Futuramente esta área reunirá instituições cooperadas, cursos, orientadores e documentos institucionais.
-            </p>
-          </div>
+          <Link
+            href="/coordenadoria/instituicoes-cursos"
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
+                  Instituições e cursos
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Cadastre instituições, cursos, responsáveis, orientadores e
+                  documentos institucionais.
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Configurar
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            href="/coordenadoria/acordos-cooperacao"
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
+                  Acordos de Cooperação
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Controle pedidos, minutas, assinaturas, publicações e vigência
+                  dos acordos.
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Gerenciar
+              </span>
+            </div>
+          </Link>
         </div>
       </section>
 
