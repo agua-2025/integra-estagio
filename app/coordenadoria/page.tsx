@@ -32,11 +32,6 @@ const processActions = [
     description:
       "Organize as respostas das unidades e informe se há possibilidade total, parcial ou inexistente.",
   },
-  {
-    title: "Relatórios e auditoria",
-    description:
-      "Acompanhe estágios em andamento, pendências, encerramentos e histórico das movimentações.",
-  },
 ];
 
 export default function CoordenadoriaAreaPage() {
@@ -194,6 +189,25 @@ export default function CoordenadoriaAreaPage() {
             <p className="mt-3 text-sm leading-6 text-slate-600">
               Libere o início do estágio somente após validação completa dos
               documentos, unidade definida e supervisor indicado.
+            </p>
+          </Link>
+
+          <Link
+            href="/coordenadoria/relatorios"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Relatórios e auditoria
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Gestão
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Acompanhe indicadores, pendências, movimentações, histórico e
+              auditoria do fluxo de estágio.
             </p>
           </Link>
 
