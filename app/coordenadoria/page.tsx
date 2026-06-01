@@ -26,21 +26,11 @@ const summaries = [
   },
 ];
 
-const actions = [
+const processActions = [
   {
     title: "Consolidar viabilidade",
     description:
       "Organize as respostas das unidades e informe se há possibilidade total, parcial ou inexistente.",
-  },
-  {
-    title: "Validar documentos individuais",
-    description:
-      "Confira carta de apresentação, termo de compromisso, seguro e demais documentos do estudante.",
-  },
-  {
-    title: "Autorizar início",
-    description:
-      "Libere o início do estágio somente após validação completa da documentação e indicação da unidade.",
   },
   {
     title: "Relatórios e auditoria",
@@ -162,13 +152,52 @@ export default function CoordenadoriaAreaPage() {
                 Entrada
               </span>
             </div>
+
             <p className="mt-3 text-sm leading-6 text-slate-600">
               Receba consultas de instituições e encaminhe às unidades municipais
               para manifestação sobre disponibilidade de campo.
             </p>
           </Link>
 
-          {actions.map((item) => (
+          <Link
+            href="/coordenadoria/estudantes"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Validar estudantes
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Documentos
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Confira carta de apresentação, termo de compromisso, seguro e
+              demais documentos antes de liberar a próxima etapa.
+            </p>
+          </Link>
+
+          <Link
+            href="/coordenadoria/autorizacoes"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Autorizar início
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Liberação
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Libere o início do estágio somente após validação completa dos
+              documentos, unidade definida e supervisor indicado.
+            </p>
+          </Link>
+
+          {processActions.map((item) => (
             <ActionCard key={item.title} {...item} />
           ))}
         </div>

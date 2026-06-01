@@ -129,21 +129,24 @@ export default function InstituicaoAreaPage() {
             </p>
           </Link>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <Link
+            href="/instituicao/apresentar-estudante"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
             <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
                 Apresentar estudantes
               </h3>
               <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                Bloqueado
+                Após acordo ativo
               </span>
             </div>
 
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              O encaminhamento de estudantes será liberado apenas após Acordo de
-              Cooperação ativo, assinado, publicado e dentro da vigência.
+              Encaminhe estudantes somente após Acordo de Cooperação ativo,
+              publicado, vigente e abrangendo o curso correspondente.
             </p>
-          </div>
+          </Link>
         </div>
       </section>
     </SystemShell>

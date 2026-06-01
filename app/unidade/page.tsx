@@ -32,21 +32,6 @@ const actions = [
     description:
       "Informe o servidor responsável pela orientação e acompanhamento do estudante na unidade.",
   },
-  {
-    title: "Acompanhar estudantes",
-    description:
-      "Consulte os estágios autorizados e acompanhe o desenvolvimento das atividades na unidade.",
-  },
-  {
-    title: "Registrar ocorrências",
-    description:
-      "Comunique faltas, ajustes, intercorrências, necessidade de alteração ou encerramento antecipado.",
-  },
-  {
-    title: "Relatório final",
-    description:
-      "Registre informações para encerramento, atividades desenvolvidas e avaliação resumida.",
-  },
 ];
 
 export default function UnidadeAreaPage() {
@@ -89,6 +74,60 @@ export default function UnidadeAreaPage() {
             <p className="mt-3 text-sm leading-6 text-slate-600">
               Informe se a unidade possui condições de receber estudantes para
               determinado curso e período.
+            </p>
+          </Link>
+
+          <Link
+            href="/unidade/estagiarios"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Acompanhar estudantes
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Supervisão
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Consulte estudantes autorizados, supervisores, horários, período,
+              ocorrências e encerramentos.
+            </p>
+          </Link>
+
+          <Link
+            href="/unidade/ocorrencias"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Registrar ocorrências
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Registro
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Comunique faltas, ajustes, intercorrências, necessidade de
+              alteração ou encerramento antecipado.
+            </p>
+          </Link>
+
+          <Link
+            href="/unidade/relatorio-final"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Relatório final
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Encerramento
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Registre informações para encerramento, atividades desenvolvidas e
+              avaliação resumida.
             </p>
           </Link>
 
