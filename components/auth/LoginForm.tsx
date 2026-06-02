@@ -1,16 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const nextPath = searchParams.get("next") || "/coordenadoria";
+  const profileError = searchParams.get("erro") === "perfil";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(
+    profileError
+      ? "Seu usuário ainda não possui perfil ativo no sistema. Solicite a liberação à Coordenadoria."
+      : "",
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
@@ -31,7 +39,7 @@ export function LoginForm() {
       return;
     }
 
-    router.push("/coordenadoria");
+    router.push(nextPath);
     router.refresh();
   }
 
