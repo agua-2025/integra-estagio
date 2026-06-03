@@ -15,6 +15,24 @@ export type DashboardInternshipField = {
   created_at: string;
 };
 
+export type FieldUnitLink = {
+  id: string;
+  field_id: string;
+  municipal_unit_id: string;
+  available_slots: number | null;
+  shift: string | null;
+  supervisor_required: boolean;
+  notes: string | null;
+  is_active: boolean;
+  municipal_units:
+    | {
+        id: string;
+        name: string;
+        department: string | null;
+      }[]
+    | null;
+};
+
 export async function getDashboardInternshipFields() {
   const supabase = await createClient();
 
@@ -59,6 +77,30 @@ export async function getDashboardInternshipFieldById(id: string) {
 
   return {
     field: data as DashboardInternshipField,
+    error: null,
+  };
+}
+
+export async function getFieldUnitLinks(fieldId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("field_units")
+    .select(
+      "id, field_id, municipal_unit_id, available_slots, shift, supervisor_required, notes, is_active, municipal_units(id, name, department)",
+    )
+    .eq("field_id", fieldId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return {
+      links: [] as FieldUnitLink[],
+      error: error.message,
+    };
+  }
+
+  return {
+    links: (data ?? []) as FieldUnitLink[],
     error: null,
   };
 }

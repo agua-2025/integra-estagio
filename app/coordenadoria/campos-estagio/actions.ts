@@ -25,12 +25,73 @@ function normalizeInteger(value: FormDataEntryValue | null) {
   return number;
 }
 
+function getSelectedUnitIds(formData: FormData) {
+  return formData
+    .getAll("unit_ids")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+}
+
 const allowedStatus = [
   "ativo",
   "em_analise",
   "temporariamente_indisponivel",
   "inativo",
 ];
+
+async function syncFieldUnits({
+  fieldId,
+  unitIds,
+  availableSlots,
+  shift,
+  supervisorRequired,
+}: {
+  fieldId: string;
+  unitIds: string[];
+  availableSlots: number | null;
+  shift: string | null;
+  supervisorRequired: boolean;
+}) {
+  const supabase = await createClient();
+
+  const { error: deactivateError } = await supabase
+    .from("field_units")
+    .update({
+      is_active: false,
+    })
+    .eq("field_id", fieldId);
+
+  if (deactivateError) {
+    throw new Error(
+      `Não foi possível atualizar as unidades vinculadas: ${deactivateError.message}`,
+    );
+  }
+
+  if (unitIds.length === 0) {
+    return;
+  }
+
+  const rows = unitIds.map((municipalUnitId) => ({
+    field_id: fieldId,
+    municipal_unit_id: municipalUnitId,
+    available_slots: availableSlots,
+    shift,
+    supervisor_required: supervisorRequired,
+    is_active: true,
+  }));
+
+  const { error: upsertError } = await supabase
+    .from("field_units")
+    .upsert(rows, {
+      onConflict: "field_id,municipal_unit_id",
+    });
+
+  if (upsertError) {
+    throw new Error(
+      `Não foi possível vincular as unidades ao campo: ${upsertError.message}`,
+    );
+  }
+}
 
 export async function createInternshipField(formData: FormData) {
   const supabase = await createClient();
@@ -41,7 +102,9 @@ export async function createInternshipField(formData: FormData) {
   const shift = normalizeText(formData.get("shift"));
   const availableSlots = normalizeInteger(formData.get("available_slots"));
   const isPublic = formData.get("is_public") === "on";
+  const supervisorRequired = formData.get("supervisor_required") === "on";
   const status = String(formData.get("status") ?? "em_analise");
+  const unitIds = getSelectedUnitIds(formData);
 
   if (!title) {
     throw new Error("Informe o nome do campo de estágio.");
@@ -51,21 +114,37 @@ export async function createInternshipField(formData: FormData) {
     throw new Error("Status inválido para o campo de estágio.");
   }
 
-  const { error } = await supabase.from("internship_fields").insert({
-    title,
-    description,
-    area,
-    shift,
-    available_slots: availableSlots,
-    status,
-    is_public: isPublic,
-    supervisor_required: true,
-    display_order: 0,
-  });
+  if (unitIds.length === 0) {
+    throw new Error("Selecione ao menos uma unidade municipal para este campo.");
+  }
+
+  const { data, error } = await supabase
+    .from("internship_fields")
+    .insert({
+      title,
+      description,
+      area,
+      shift,
+      available_slots: availableSlots,
+      status,
+      is_public: isPublic,
+      supervisor_required: supervisorRequired,
+      display_order: 0,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     throw new Error(`Não foi possível cadastrar o campo: ${error.message}`);
   }
+
+  await syncFieldUnits({
+    fieldId: data.id,
+    unitIds,
+    availableSlots,
+    shift,
+    supervisorRequired,
+  });
 
   revalidatePath("/coordenadoria/campos-estagio");
   revalidatePath("/campos-de-estagio");
@@ -83,6 +162,7 @@ export async function updateInternshipField(formData: FormData) {
   const status = String(formData.get("status") ?? "em_analise");
   const isPublic = formData.get("is_public") === "on";
   const supervisorRequired = formData.get("supervisor_required") === "on";
+  const unitIds = getSelectedUnitIds(formData);
 
   if (!id) {
     throw new Error("Campo não identificado.");
@@ -94,6 +174,10 @@ export async function updateInternshipField(formData: FormData) {
 
   if (!allowedStatus.includes(status)) {
     throw new Error("Status inválido para o campo de estágio.");
+  }
+
+  if (unitIds.length === 0) {
+    throw new Error("Selecione ao menos uma unidade municipal para este campo.");
   }
 
   const { error } = await supabase
@@ -113,6 +197,14 @@ export async function updateInternshipField(formData: FormData) {
   if (error) {
     throw new Error(`Não foi possível atualizar o campo: ${error.message}`);
   }
+
+  await syncFieldUnits({
+    fieldId: id,
+    unitIds,
+    availableSlots,
+    shift,
+    supervisorRequired,
+  });
 
   revalidatePath("/coordenadoria/campos-estagio");
   revalidatePath(`/coordenadoria/campos-estagio/${id}`);

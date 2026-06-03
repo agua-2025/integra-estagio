@@ -3,6 +3,7 @@ import { ActionCard } from "@/components/system/ActionCard";
 import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getDashboardInternshipFields } from "@/lib/queries/dashboard-internship-fields";
+import { getMunicipalUnits } from "@/lib/queries/municipal-units";
 import {
   createInternshipField,
   toggleFieldPublic,
@@ -40,7 +41,12 @@ function statusClass(status: string) {
 }
 
 export default async function CoordenadoriaCamposEstagioPage() {
-  const { fields, error } = await getDashboardInternshipFields();
+  const [{ fields, error }, { units, error: unitsError }] = await Promise.all([
+    getDashboardInternshipFields(),
+    getMunicipalUnits(),
+  ]);
+
+  const activeUnits = units.filter((unit) => unit.is_active);
 
   const activeCount = fields.filter((field) => field.status === "ativo").length;
   const publicCount = fields.filter((field) => field.is_public).length;
@@ -83,12 +89,21 @@ export default async function CoordenadoriaCamposEstagioPage() {
           Voltar para a Coordenadoria
         </Link>
 
-        <Link
-          href="/campos-de-estagio"
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
-        >
-          Ver página pública
-        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link
+            href="/coordenadoria/unidades"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+          >
+            Unidades municipais
+          </Link>
+
+          <Link
+            href="/campos-de-estagio"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+          >
+            Ver página pública
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
@@ -103,14 +118,20 @@ export default async function CoordenadoriaCamposEstagioPage() {
         </section>
       )}
 
+      {unitsError && (
+        <section className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          Não foi possível carregar as unidades municipais: {unitsError}
+        </section>
+      )}
+
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-5">
           <h2 className="text-2xl font-bold tracking-tight text-slate-950">
             Novo campo de estágio
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Cadastre uma área municipal com possibilidade de estágio. Campos
-            ativos e publicados aparecerão na página pública.
+            Cadastre uma área municipal com possibilidade de estágio e selecione
+            as unidades que poderão receber estudantes nesse campo.
           </p>
         </div>
 
@@ -123,7 +144,7 @@ export default async function CoordenadoriaCamposEstagioPage() {
               name="title"
               required
               className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              placeholder="Ex.: Administração e Gestão Pública"
+              placeholder="Ex.: Jurídico / Administração Pública"
             />
           </label>
 
@@ -132,7 +153,7 @@ export default async function CoordenadoriaCamposEstagioPage() {
             <input
               name="area"
               className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              placeholder="Ex.: Administração Pública"
+              placeholder="Ex.: Direito"
             />
           </label>
 
@@ -168,7 +189,7 @@ export default async function CoordenadoriaCamposEstagioPage() {
             />
           </label>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+          <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
             <label className="grid gap-2">
               <span className="text-sm font-semibold text-slate-700">
                 Status inicial
@@ -192,9 +213,66 @@ export default async function CoordenadoriaCamposEstagioPage() {
                 className="h-4 w-4 rounded border-slate-300 text-teal-700"
               />
               <span className="text-sm font-semibold text-slate-700">
-                Publicar na página pública
+                Publicar
               </span>
             </label>
+
+            <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <input
+                name="supervisor_required"
+                type="checkbox"
+                defaultChecked
+                className="h-4 w-4 rounded border-slate-300 text-teal-700"
+              />
+              <span className="text-sm font-semibold text-slate-700">
+                Exige supervisor
+              </span>
+            </label>
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-bold text-slate-800">
+                Unidades que poderão receber este estágio
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Selecione uma ou mais unidades municipais. Exemplo: Direito
+                pode ser vinculado à Administração e à Procuradoria.
+              </p>
+
+              {activeUnits.length === 0 ? (
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                  Nenhuma unidade ativa cadastrada. Cadastre uma unidade antes
+                  de criar o campo.
+                </div>
+              ) : (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {activeUnits.map((unit) => (
+                    <label
+                      key={unit.id}
+                      className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+                    >
+                      <input
+                        name="unit_ids"
+                        type="checkbox"
+                        value={unit.id}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700"
+                      />
+                      <span>
+                        <span className="block text-sm font-bold text-slate-800">
+                          {unit.name}
+                        </span>
+                        {unit.department && (
+                          <span className="mt-1 block text-xs text-slate-500">
+                            {unit.department}
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="lg:col-span-2">
@@ -209,28 +287,14 @@ export default async function CoordenadoriaCamposEstagioPage() {
       </section>
 
       <section className="mt-8">
-        <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-              Campos cadastrados
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Listagem administrativa conectada ao Supabase. A publicação de um
-              campo torna a área visível na página pública de campos de estágio.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {["Todos", "Ativos", "Publicados", "Inativos"].map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+            Campos cadastrados
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            Listagem administrativa conectada ao Supabase. A edição do campo
+            permite revisar também as unidades vinculadas.
+          </p>
         </div>
 
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -318,6 +382,7 @@ export default async function CoordenadoriaCamposEstagioPage() {
                             >
                               Editar
                             </Link>
+
                             <form action={toggleFieldPublic}>
                               <input type="hidden" name="id" value={field.id} />
                               <input
@@ -385,7 +450,7 @@ export default async function CoordenadoriaCamposEstagioPage() {
 
               <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs font-medium text-slate-500">
                 No celular, a tabela possui rolagem horizontal. As ações de
-                cadastro, publicação e status já estão conectadas ao Supabase.
+                cadastro, publicação, status e edição estão conectadas ao Supabase.
               </div>
             </>
           )}
@@ -394,20 +459,19 @@ export default async function CoordenadoriaCamposEstagioPage() {
 
       <section className="mt-8 grid gap-5 lg:grid-cols-3">
         <ActionCard
-          title="Publicação controlada"
-          description="Somente campos ativos e publicados aparecem para consulta pública e para instituições."
+          title="Vínculo flexível"
+          description="Um campo de estágio pode ser oferecido por várias unidades municipais."
           status="Regra"
         />
         <ActionCard
-          title="Flexibilidade"
-          description="A Coordenadoria pode ativar, suspender, inativar ou ocultar campos conforme disponibilidade das unidades."
+          title="Exemplo prático"
+          description="O campo jurídico pode ser vinculado à Administração, Procuradoria, Gabinete ou Controle Interno."
         />
         <ActionCard
           title="Próxima etapa"
-          description="Depois vamos acrescentar edição detalhada do campo, unidade responsável e vínculos com cursos."
+          description="Depois vamos vincular campos aos cursos compatíveis, como Direito, Administração, Serviço Social e outros."
         />
       </section>
     </SystemShell>
   );
 }
-

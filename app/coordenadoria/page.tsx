@@ -58,7 +58,7 @@ export default function CoordenadoriaAreaPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Link
             href="/coordenadoria/campos-estagio"
             className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
@@ -69,8 +69,27 @@ export default function CoordenadoriaAreaPage() {
                   Campos de Estágio
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Cadastre, edite, publique ou suspenda áreas e unidades
-                  disponíveis.
+                  Cadastre, edite, publique ou suspenda áreas disponíveis.
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Configurar
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            href="/coordenadoria/unidades"
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
+                  Unidades Municipais
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Cadastre secretarias, setores e órgãos que poderão receber estagiários.
                 </p>
               </div>
 
@@ -90,8 +109,7 @@ export default function CoordenadoriaAreaPage() {
                   Instituições e cursos
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Cadastre instituições, cursos, responsáveis, orientadores e
-                  documentos institucionais.
+                  Cadastre instituições, cursos, responsáveis e documentos institucionais.
                 </p>
               </div>
 
@@ -111,8 +129,7 @@ export default function CoordenadoriaAreaPage() {
                   Acordos de Cooperação
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Controle pedidos, minutas, assinaturas, publicações e vigência
-                  dos acordos.
+                  Controle pedidos, minutas, assinaturas, publicações e vigência.
                 </p>
               </div>
 

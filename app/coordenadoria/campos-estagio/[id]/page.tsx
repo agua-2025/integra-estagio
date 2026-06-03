@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SystemShell } from "@/components/system/SystemShell";
-import { getDashboardInternshipFieldById } from "@/lib/queries/dashboard-internship-fields";
+import {
+  getDashboardInternshipFieldById,
+  getFieldUnitLinks,
+} from "@/lib/queries/dashboard-internship-fields";
+import { getMunicipalUnits } from "@/lib/queries/municipal-units";
 import { updateInternshipField } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -17,17 +21,30 @@ export default async function EditarCampoPage({
   params,
 }: EditarCampoPageProps) {
   const { id } = await params;
-  const { field, error } = await getDashboardInternshipFieldById(id);
+
+  const [
+    { field, error },
+    { units, error: unitsError },
+    { links, error: linksError },
+  ] = await Promise.all([
+    getDashboardInternshipFieldById(id),
+    getMunicipalUnits(),
+    getFieldUnitLinks(id),
+  ]);
 
   if (!field) {
     notFound();
   }
 
+  const activeLinkedUnitIds = new Set(
+    links.filter((link) => link.is_active).map((link) => link.municipal_unit_id),
+  );
+
   return (
     <SystemShell
       areaLabel="Coordenadoria"
       title="Editar Campo de Estágio"
-      description="Atualize as informações do campo, publicação e situação administrativa."
+      description="Atualize as informações do campo, publicação, situação administrativa e unidades vinculadas."
     >
       <div className="mb-6">
         <Link
@@ -38,9 +55,11 @@ export default async function EditarCampoPage({
         </Link>
       </div>
 
-      {error && (
+      {(error || unitsError || linksError) && (
         <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          Não foi possível carregar o campo: {error}
+          {error && <p>Não foi possível carregar o campo: {error}</p>}
+          {unitsError && <p>Não foi possível carregar as unidades: {unitsError}</p>}
+          {linksError && <p>Não foi possível carregar os vínculos: {linksError}</p>}
         </section>
       )}
 
@@ -51,8 +70,8 @@ export default async function EditarCampoPage({
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Campos ativos e publicados aparecem na página pública de campos de
-            estágio. Campos suspensos, inativos ou ocultos não aparecem para
-            consulta pública.
+            estágio. Selecione também as unidades municipais que podem receber
+            estudantes neste campo.
           </p>
         </div>
 
@@ -152,6 +171,53 @@ export default async function EditarCampoPage({
                 Exige supervisor
               </span>
             </label>
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-bold text-slate-800">
+                Unidades que poderão receber este estágio
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Marque uma ou mais unidades municipais. Exemplo: o campo jurídico
+                pode ser vinculado à Administração e à Procuradoria.
+              </p>
+
+              {units.length === 0 ? (
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                  Nenhuma unidade cadastrada.
+                </div>
+              ) : (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {units
+                    .filter((unit) => unit.is_active)
+                    .map((unit) => (
+                      <label
+                        key={unit.id}
+                        className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+                      >
+                        <input
+                          name="unit_ids"
+                          type="checkbox"
+                          value={unit.id}
+                          defaultChecked={activeLinkedUnitIds.has(unit.id)}
+                          className="mt-1 h-4 w-4 rounded border-slate-300 text-teal-700"
+                        />
+                        <span>
+                          <span className="block text-sm font-bold text-slate-800">
+                            {unit.name}
+                          </span>
+                          {unit.department && (
+                            <span className="mt-1 block text-xs text-slate-500">
+                              {unit.department}
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row lg:col-span-2">
