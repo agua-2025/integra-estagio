@@ -312,6 +312,12 @@ export default async function CoordenadoriaCamposEstagioPage() {
 
                         <td className="px-5 py-4">
                           <div className="flex flex-wrap justify-end gap-2">
+                            <Link
+                              href={`/coordenadoria/campos-estagio/${field.id}`}
+                              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                            >
+                              Editar
+                            </Link>
                             <form action={toggleFieldPublic}>
                               <input type="hidden" name="id" value={field.id} />
                               <input
@@ -404,3 +410,4 @@ export default async function CoordenadoriaCamposEstagioPage() {
     </SystemShell>
   );
 }
+

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 function normalizeText(value: FormDataEntryValue | null) {
@@ -24,6 +25,13 @@ function normalizeInteger(value: FormDataEntryValue | null) {
   return number;
 }
 
+const allowedStatus = [
+  "ativo",
+  "em_analise",
+  "temporariamente_indisponivel",
+  "inativo",
+];
+
 export async function createInternshipField(formData: FormData) {
   const supabase = await createClient();
 
@@ -38,13 +46,6 @@ export async function createInternshipField(formData: FormData) {
   if (!title) {
     throw new Error("Informe o nome do campo de estágio.");
   }
-
-  const allowedStatus = [
-    "ativo",
-    "em_analise",
-    "temporariamente_indisponivel",
-    "inativo",
-  ];
 
   if (!allowedStatus.includes(status)) {
     throw new Error("Status inválido para o campo de estágio.");
@@ -68,6 +69,56 @@ export async function createInternshipField(formData: FormData) {
 
   revalidatePath("/coordenadoria/campos-estagio");
   revalidatePath("/campos-de-estagio");
+}
+
+export async function updateInternshipField(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = normalizeText(formData.get("id"));
+  const title = normalizeText(formData.get("title"));
+  const description = normalizeText(formData.get("description"));
+  const area = normalizeText(formData.get("area"));
+  const shift = normalizeText(formData.get("shift"));
+  const availableSlots = normalizeInteger(formData.get("available_slots"));
+  const status = String(formData.get("status") ?? "em_analise");
+  const isPublic = formData.get("is_public") === "on";
+  const supervisorRequired = formData.get("supervisor_required") === "on";
+
+  if (!id) {
+    throw new Error("Campo não identificado.");
+  }
+
+  if (!title) {
+    throw new Error("Informe o nome do campo de estágio.");
+  }
+
+  if (!allowedStatus.includes(status)) {
+    throw new Error("Status inválido para o campo de estágio.");
+  }
+
+  const { error } = await supabase
+    .from("internship_fields")
+    .update({
+      title,
+      description,
+      area,
+      shift,
+      available_slots: availableSlots,
+      status,
+      is_public: isPublic,
+      supervisor_required: supervisorRequired,
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`Não foi possível atualizar o campo: ${error.message}`);
+  }
+
+  revalidatePath("/coordenadoria/campos-estagio");
+  revalidatePath(`/coordenadoria/campos-estagio/${id}`);
+  revalidatePath("/campos-de-estagio");
+
+  redirect("/coordenadoria/campos-estagio");
 }
 
 export async function toggleFieldPublic(formData: FormData) {
@@ -100,13 +151,6 @@ export async function updateFieldStatus(formData: FormData) {
 
   const id = normalizeText(formData.get("id"));
   const status = String(formData.get("status") ?? "");
-
-  const allowedStatus = [
-    "ativo",
-    "em_analise",
-    "temporariamente_indisponivel",
-    "inativo",
-  ];
 
   if (!id) {
     throw new Error("Campo não identificado.");

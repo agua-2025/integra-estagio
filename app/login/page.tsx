@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -41,7 +42,15 @@ export default function LoginPage() {
             Informe seu e-mail e senha cadastrados.
           </p>
 
-          <LoginForm />
+          <Suspense
+            fallback={
+              <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
+                Carregando formulário de login...
+              </div>
+            }
+          >
+            <LoginForm />
+          </Suspense>
 
           <div className="mt-6 border-t border-slate-200 pt-5">
             <Link

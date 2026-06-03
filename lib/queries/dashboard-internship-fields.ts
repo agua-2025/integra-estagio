@@ -38,3 +38,27 @@ export async function getDashboardInternshipFields() {
     error: null,
   };
 }
+
+export async function getDashboardInternshipFieldById(id: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("internship_fields")
+    .select(
+      "id, title, description, area, status, is_public, available_slots, shift, supervisor_required, display_order, municipal_unit_id, created_at",
+    )
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    return {
+      field: null,
+      error: error.message,
+    };
+  }
+
+  return {
+    field: data as DashboardInternshipField,
+    error: null,
+  };
+}
