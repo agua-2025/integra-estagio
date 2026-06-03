@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FieldFormGuard } from "@/components/fields/FieldFormGuard";
 import { SystemShell } from "@/components/system/SystemShell";
 import {
   getDashboardInternshipFieldById,
@@ -16,6 +17,7 @@ type EditarCampoPageProps = {
     id: string;
   }>;
 };
+
 
 export default async function EditarCampoPage({
   params,
@@ -75,7 +77,7 @@ export default async function EditarCampoPage({
           </p>
         </div>
 
-        <form action={updateInternshipField} className="grid gap-4 lg:grid-cols-2">
+        <FieldFormGuard action={updateInternshipField} className="grid gap-4 lg:grid-cols-2">
           <input type="hidden" name="id" value={field.id} />
 
           <label className="grid gap-2">
@@ -179,7 +181,7 @@ export default async function EditarCampoPage({
                 Unidades que poderão receber este estágio
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Marque uma ou mais unidades municipais. Exemplo: o campo jurídico
+                Marque uma ou mais unidades municipais. A lista possui rolagem interna para não alongar a página. Exemplo: o campo jurídico
                 pode ser vinculado à Administração e à Procuradoria.
               </p>
 
@@ -188,13 +190,13 @@ export default async function EditarCampoPage({
                   Nenhuma unidade cadastrada.
                 </div>
               ) : (
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="mt-3 grid max-h-56 gap-2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 pr-3 sm:grid-cols-2">
                   {units
                     .filter((unit) => unit.is_active)
                     .map((unit) => (
                       <label
                         key={unit.id}
-                        className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+                        className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition hover:border-teal-200 hover:bg-teal-50"
                       >
                         <input
                           name="unit_ids"
@@ -235,8 +237,12 @@ export default async function EditarCampoPage({
               Cancelar
             </Link>
           </div>
-        </form>
+        </FieldFormGuard>
       </section>
     </SystemShell>
   );
 }
+
+
+
+

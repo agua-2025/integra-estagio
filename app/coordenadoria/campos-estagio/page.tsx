@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ActionCard } from "@/components/system/ActionCard";
 import { SummaryCard } from "@/components/system/SummaryCard";
+import { FieldFormGuard } from "@/components/fields/FieldFormGuard";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getDashboardInternshipFields } from "@/lib/queries/dashboard-internship-fields";
 import { getMunicipalUnits } from "@/lib/queries/municipal-units";
@@ -40,7 +41,26 @@ function statusClass(status: string) {
   return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
 }
 
-export default async function CoordenadoriaCamposEstagioPage() {
+type CoordenadoriaCamposEstagioPageProps = {
+  searchParams?: Promise<{
+    erro?: string;
+  }>;
+};
+
+function getPageMessage(errorCode?: string) {
+  if (errorCode === "sem-unidade-publicada") {
+    return "Para ativar ou publicar um campo de estágio, selecione ao menos uma unidade municipal vinculada.";
+  }
+
+  return null;
+}
+
+export default async function CoordenadoriaCamposEstagioPage({
+  searchParams,
+}: CoordenadoriaCamposEstagioPageProps) {
+  const params = await searchParams;
+  const pageMessage = getPageMessage(params?.erro);
+
   const [{ fields, error }, { units, error: unitsError }] = await Promise.all([
     getDashboardInternshipFields(),
     getMunicipalUnits(),
@@ -112,6 +132,12 @@ export default async function CoordenadoriaCamposEstagioPage() {
         ))}
       </div>
 
+      {pageMessage && (
+        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+          {pageMessage}
+        </section>
+      )}
+
       {error && (
         <section className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           Não foi possível carregar os campos de estágio: {error}
@@ -135,7 +161,7 @@ export default async function CoordenadoriaCamposEstagioPage() {
           </p>
         </div>
 
-        <form action={createInternshipField} className="grid gap-4 lg:grid-cols-2">
+        <FieldFormGuard action={createInternshipField} className="grid gap-4 lg:grid-cols-2">
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-slate-700">
               Nome do campo
@@ -236,7 +262,7 @@ export default async function CoordenadoriaCamposEstagioPage() {
                 Unidades que poderão receber este estágio
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Selecione uma ou mais unidades municipais. Exemplo: Direito
+                Selecione uma ou mais unidades municipais. A lista possui rolagem interna para não alongar a página. Exemplo: Direito
                 pode ser vinculado à Administração e à Procuradoria.
               </p>
 
@@ -246,11 +272,11 @@ export default async function CoordenadoriaCamposEstagioPage() {
                   de criar o campo.
                 </div>
               ) : (
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="mt-3 grid max-h-56 gap-2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 pr-3 sm:grid-cols-2">
                   {activeUnits.map((unit) => (
                     <label
                       key={unit.id}
-                      className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3"
+                      className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition hover:border-teal-200 hover:bg-teal-50"
                     >
                       <input
                         name="unit_ids"
@@ -283,7 +309,7 @@ export default async function CoordenadoriaCamposEstagioPage() {
               Cadastrar campo
             </button>
           </div>
-        </form>
+        </FieldFormGuard>
       </section>
 
       <section className="mt-8">
@@ -475,3 +501,6 @@ export default async function CoordenadoriaCamposEstagioPage() {
     </SystemShell>
   );
 }
+
+
+

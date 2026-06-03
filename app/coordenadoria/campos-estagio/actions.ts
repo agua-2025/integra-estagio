@@ -114,8 +114,8 @@ export async function createInternshipField(formData: FormData) {
     throw new Error("Status inválido para o campo de estágio.");
   }
 
-  if (unitIds.length === 0) {
-    throw new Error("Selecione ao menos uma unidade municipal para este campo.");
+  if (unitIds.length === 0 && (status === "ativo" || isPublic)) {
+    redirect("/coordenadoria/campos-estagio");
   }
 
   const { data, error } = await supabase
@@ -176,8 +176,8 @@ export async function updateInternshipField(formData: FormData) {
     throw new Error("Status inválido para o campo de estágio.");
   }
 
-  if (unitIds.length === 0) {
-    throw new Error("Selecione ao menos uma unidade municipal para este campo.");
+  if (unitIds.length === 0 && (status === "ativo" || isPublic)) {
+    redirect(`/coordenadoria/campos-estagio/${id}`);
   }
 
   const { error } = await supabase
@@ -266,3 +266,5 @@ export async function updateFieldStatus(formData: FormData) {
   revalidatePath("/coordenadoria/campos-estagio");
   revalidatePath("/campos-de-estagio");
 }
+
+
