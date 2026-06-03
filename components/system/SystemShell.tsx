@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Menu,
 } from "lucide-react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const navigation = [
   { label: "Instituição", href: "/instituicao", Icon: Building2 },
@@ -68,6 +69,10 @@ export function SystemShell({
                 >
                   Trocar área
                 </Link>
+
+                <div className="mt-2 border-t border-slate-200 pt-2">
+                  <LogoutButton />
+                </div>
               </nav>
             </div>
           </details>
@@ -110,12 +115,18 @@ export function SystemShell({
               ))}
             </nav>
 
-            <div className="mt-auto rounded-2xl border border-teal-100 bg-teal-50 p-4">
-              <p className="text-sm font-bold text-teal-900">Versão inicial</p>
-              <p className="mt-2 text-xs leading-5 text-teal-800">
-                As áreas estão em validação visual. Login, permissões e dados
-                serão ativados na próxima etapa.
-              </p>
+            <div className="mt-auto space-y-4">
+              <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
+                <p className="text-sm font-bold text-teal-900">
+                  Versão inicial
+                </p>
+                <p className="mt-2 text-xs leading-5 text-teal-800">
+                  As áreas estão em validação visual. Login, permissões e dados
+                  serão ativados por etapas.
+                </p>
+              </div>
+
+              <LogoutButton />
             </div>
           </div>
         </aside>
