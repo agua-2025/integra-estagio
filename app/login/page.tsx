@@ -53,12 +53,21 @@ export default function LoginPage() {
           </Suspense>
 
           <div className="mt-6 border-t border-slate-200 pt-5">
-            <Link
-              href="/acesso"
-              className="text-sm font-semibold text-teal-700 hover:text-teal-900"
-            >
-              Voltar para escolha de área
-            </Link>
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/solicitar-acesso"
+                className="text-sm font-semibold text-teal-700 hover:text-teal-900"
+              >
+                Instituição ainda não tem acesso? Solicitar acesso
+              </Link>
+
+              <Link
+                href="/acesso"
+                className="text-sm font-semibold text-slate-600 hover:text-teal-800"
+              >
+                Voltar para escolha de área
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -67,3 +76,4 @@ export default function LoginPage() {
     </main>
   );
 }
+

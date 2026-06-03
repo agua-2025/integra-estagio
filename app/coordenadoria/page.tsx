@@ -120,6 +120,26 @@ export default function CoordenadoriaAreaPage() {
           </Link>
 
           <Link
+            href="/coordenadoria/solicitacoes-acesso"
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
+                  Solicitações de Acesso
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Analise pedidos de acesso enviados por instituições de ensino.
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Analisar
+              </span>
+            </div>
+          </Link>
+
+          <Link
             href="/coordenadoria/acordos-cooperacao"
             className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
           >
@@ -236,3 +256,4 @@ export default function CoordenadoriaAreaPage() {
     </SystemShell>
   );
 }
+
