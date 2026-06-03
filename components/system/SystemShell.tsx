@@ -1,20 +1,102 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  BookOpen,
   Building2,
+  ClipboardCheck,
+  ClipboardList,
+  FileText,
   GraduationCap,
   Landmark,
   LayoutDashboard,
+  LogIn,
   Menu,
+  School,
+  Users,
 } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { createClient } from "@/lib/supabase/server";
 
-const navigation = [
-  { label: "Instituição", href: "/instituicao", Icon: Building2 },
-  { label: "Coordenadoria", href: "/coordenadoria", Icon: LayoutDashboard },
-  { label: "Unidade Municipal", href: "/unidade", Icon: Landmark },
-  { label: "Estagiário", href: "/estagiario", Icon: GraduationCap },
+type NavigationItem = {
+  label: string;
+  href: string;
+  Icon: React.ComponentType<{
+    className?: string;
+  }>;
+};
+
+const adminNavigation: NavigationItem[] = [
+  { label: "Painel da Coordenadoria", href: "/coordenadoria", Icon: LayoutDashboard },
+  { label: "Solicitações de Acesso", href: "/coordenadoria/solicitacoes-acesso", Icon: LogIn },
+  { label: "Instituições e Cursos", href: "/coordenadoria/instituicoes-cursos", Icon: School },
+  { label: "Campos de Estágio", href: "/coordenadoria/campos-estagio", Icon: ClipboardList },
+  { label: "Unidades Municipais", href: "/coordenadoria/unidades", Icon: Landmark },
+  { label: "Sondagens", href: "/coordenadoria/sondagens", Icon: ClipboardCheck },
+  { label: "Acordos de Cooperação", href: "/coordenadoria/acordos-cooperacao", Icon: FileText },
+  { label: "Estudantes", href: "/coordenadoria/estudantes", Icon: Users },
+  { label: "Autorizações", href: "/coordenadoria/autorizacoes", Icon: GraduationCap },
+  { label: "Relatórios", href: "/coordenadoria/relatorios", Icon: BookOpen },
 ];
+
+const institutionNavigation: NavigationItem[] = [
+  { label: "Painel da Instituição", href: "/instituicao", Icon: LayoutDashboard },
+  { label: "Dados Institucionais", href: "/instituicao/cadastro", Icon: Building2 },
+  { label: "Cursos", href: "/instituicao/cursos", Icon: School },
+  { label: "Sondagens", href: "/instituicao/sondagens", Icon: ClipboardCheck },
+  { label: "Acordos", href: "/instituicao/acordos", Icon: FileText },
+  { label: "Estudantes", href: "/instituicao/estudantes", Icon: GraduationCap },
+];
+
+const unitNavigation: NavigationItem[] = [
+  { label: "Painel da Unidade", href: "/unidade", Icon: LayoutDashboard },
+  { label: "Sondagens Recebidas", href: "/unidade/sondagens", Icon: ClipboardCheck },
+  { label: "Estagiários", href: "/unidade/estagiarios", Icon: GraduationCap },
+  { label: "Ocorrências", href: "/unidade/ocorrencias", Icon: FileText },
+  { label: "Relatórios Finais", href: "/unidade/relatorios", Icon: BookOpen },
+];
+
+const studentNavigation: NavigationItem[] = [
+  { label: "Painel do Estagiário", href: "/estagiario", Icon: LayoutDashboard },
+  { label: "Meu Estágio", href: "/estagiario/estagio", Icon: GraduationCap },
+  { label: "Documentos", href: "/estagiario/documentos", Icon: FileText },
+  { label: "Orientações", href: "/estagiario/orientacoes", Icon: BookOpen },
+];
+
+function getNavigation(role?: string | null) {
+  if (role === "instituicao") {
+    return institutionNavigation;
+  }
+
+  if (role === "unidade") {
+    return unitNavigation;
+  }
+
+  if (role === "estagiario") {
+    return studentNavigation;
+  }
+
+  return adminNavigation;
+}
+
+async function getCurrentProfileRole() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  return data?.role ?? null;
+}
 
 type SystemShellProps = {
   areaLabel: string;
@@ -23,12 +105,15 @@ type SystemShellProps = {
   children: React.ReactNode;
 };
 
-export function SystemShell({
+export async function SystemShell({
   areaLabel,
   title,
   description,
   children,
 }: SystemShellProps) {
+  const role = await getCurrentProfileRole();
+  const navigation = getNavigation(role);
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
@@ -50,7 +135,7 @@ export function SystemShell({
               Menu
             </summary>
 
-            <div className="absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+            <div className="absolute right-0 mt-3 max-h-[75vh] w-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
               <nav className="grid gap-1">
                 {navigation.map(({ href, label, Icon }) => (
                   <Link
@@ -62,13 +147,6 @@ export function SystemShell({
                     {label}
                   </Link>
                 ))}
-
-                <Link
-                  href="/acesso"
-                  className="mt-2 rounded-xl bg-teal-700 px-3 py-2.5 text-center text-sm font-semibold text-white hover:bg-teal-800"
-                >
-                  Trocar área
-                </Link>
 
                 <div className="mt-2 border-t border-slate-200 pt-2">
                   <LogoutButton />
@@ -102,7 +180,7 @@ export function SystemShell({
               </p>
             </Link>
 
-            <nav className="mt-6 grid gap-2">
+            <nav className="mt-6 grid gap-1">
               {navigation.map(({ href, label, Icon }) => (
                 <Link
                   key={href}
@@ -115,14 +193,13 @@ export function SystemShell({
               ))}
             </nav>
 
-            <div className="mt-auto space-y-4">
+            <div className="mt-auto space-y-4 pt-6">
               <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
                 <p className="text-sm font-bold text-teal-900">
-                  Versão inicial
+                  Acesso controlado
                 </p>
                 <p className="mt-2 text-xs leading-5 text-teal-800">
-                  As áreas estão em validação visual. Login, permissões e dados
-                  serão ativados por etapas.
+                  O menu exibido considera o perfil de acesso do usuário logado.
                 </p>
               </div>
 
@@ -145,13 +222,6 @@ export function SystemShell({
                   {description}
                 </p>
               </div>
-
-              <Link
-                href="/acesso"
-                className="inline-flex w-full justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800 sm:w-auto"
-              >
-                Trocar área
-              </Link>
             </div>
           </header>
 

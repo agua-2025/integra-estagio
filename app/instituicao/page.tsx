@@ -1,17 +1,13 @@
+import Link from "next/link";
 import { ActionCard } from "@/components/system/ActionCard";
 import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getInstitutionAreaData } from "@/lib/queries/institution-area";
-import {
-  createOwnCourse,
-  createOwnInstitution,
-  updateOwnInstitution,
-} from "./actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function institutionStatusLabel(status: string) {
+function institutionStatusLabel(status?: string | null) {
   const labels: Record<string, string> = {
     em_analise: "Em análise",
     ativa: "Ativa",
@@ -20,32 +16,30 @@ function institutionStatusLabel(status: string) {
     bloqueada: "Bloqueada",
   };
 
-  return labels[status] ?? status;
-}
-
-function courseLevelLabel(level: string | null) {
-  const labels: Record<string, string> = {
-    superior: "Superior",
-    tecnico: "Técnico",
-    medio: "Médio",
-    outro: "Outro",
-  };
-
-  return level ? labels[level] ?? level : "Não informado";
+  return status ? labels[status] ?? status : "Sem cadastro";
 }
 
 export default async function InstituicaoAreaPage() {
   const { profile, institution, courses, error } = await getInstitutionAreaData();
 
   const activeCourses = courses.filter((course) => course.is_active);
+  const institutionIsActive = institution?.status === "ativa";
+  const hasInstitution = Boolean(institution);
+  const hasCourses = courses.length > 0;
+
+  const nextAction = !hasInstitution
+    ? "Preencha o cadastro institucional."
+    : !hasCourses
+      ? "Cadastre os cursos da instituição."
+      : !institutionIsActive
+        ? "Aguarde a validação da Coordenadoria."
+        : "A instituição está apta para as próximas etapas.";
 
   const summaries = [
     {
-      label: "Situação",
-      value: institution
-        ? institutionStatusLabel(institution.status)
-        : "Sem cadastro",
-      description: "Status atual do cadastro institucional.",
+      label: "Cadastro",
+      value: institutionStatusLabel(institution?.status),
+      description: "Situação atual do cadastro institucional.",
     },
     {
       label: "Cursos",
@@ -57,16 +51,18 @@ export default async function InstituicaoAreaPage() {
       value: String(activeCourses.length),
       description: "Cursos disponíveis para análise.",
     },
+    {
+      label: "Próxima ação",
+      value: hasInstitution && hasCourses && institutionIsActive ? "Liberada" : "Pendente",
+      description: nextAction,
+    },
   ];
-
-  const canEditInstitution =
-    institution?.status === "em_analise" || institution?.status === "pendente";
 
   return (
     <SystemShell
       areaLabel="Área da Instituição"
-      title="Cadastro institucional e cursos"
-      description="Preencha os dados da instituição de ensino e informe os cursos que poderão participar do fluxo de estágio."
+      title="Painel da Instituição"
+      description="Acompanhe o cadastro institucional, cursos, sondagens e etapas necessárias para participação no fluxo de estágio."
     >
       {error && (
         <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
@@ -76,372 +72,120 @@ export default async function InstituicaoAreaPage() {
 
       {profile?.role !== "instituicao" && (
         <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-          Você está acessando esta página com perfil administrativo. O fluxo de
-          autoinscrição será utilizado por usuários com perfil de instituição.
+          Você está acessando esta área com perfil administrativo. O menu real da
+          instituição será exibido para usuários com perfil institucional.
         </section>
       )}
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         {summaries.map((item) => (
           <SummaryCard key={item.label} {...item} />
         ))}
       </div>
 
-      {!institution ? (
-        <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-              Solicitar cadastro institucional
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Informe os dados da instituição. O cadastro será encaminhado para
-              análise da Coordenadoria antes da liberação das próximas etapas.
-            </p>
-          </div>
+      <section className="mt-8">
+        <div className="mb-5">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+            Módulos da instituição
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Complete as etapas iniciais antes de solicitar sondagem de campo de
+            estágio.
+          </p>
+        </div>
 
-          <form action={createOwnInstitution} className="grid gap-4 lg:grid-cols-2">
-            <label className="grid gap-2 lg:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Nome da instituição
-              </span>
-              <input
-                name="name"
-                required
-                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                placeholder="Ex.: Faculdade Católica Rainha da Paz"
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-700">CNPJ</span>
-              <input
-                name="cnpj"
-                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                placeholder="00.000.000/0000-00"
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Cidade
-              </span>
-              <input
-                name="city"
-                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                placeholder="Ex.: Araputanga"
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-700">UF</span>
-              <input
-                name="state"
-                maxLength={2}
-                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm uppercase outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                placeholder="MT"
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-700">
-                E-mail institucional
-              </span>
-              <input
-                name="email"
-                type="email"
-                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                placeholder="instituicao@exemplo.com"
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Telefone
-              </span>
-              <input
-                name="phone"
-                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                placeholder="(65) 0000-0000"
-              />
-            </label>
-
-            <label className="grid gap-2 lg:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Observações
-              </span>
-              <textarea
-                name="notes"
-                rows={3}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                placeholder="Informe dados úteis para análise da Coordenadoria."
-              />
-            </label>
-
-            <div className="lg:col-span-2">
-              <button
-                type="submit"
-                className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
-              >
-                Enviar cadastro para análise
-              </button>
-            </div>
-          </form>
-        </section>
-      ) : (
-        <>
-          <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <Link
+            href="/instituicao/cadastro"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
                 Dados institucionais
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Enquanto o cadastro estiver em análise ou pendente, a instituição
-                poderá revisar os dados informados. Após ativação, alterações
-                sensíveis deverão ser avaliadas pela Coordenadoria.
-              </p>
+              </h3>
+              <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Cadastro
+              </span>
             </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Preencha ou acompanhe os dados da instituição de ensino.
+            </p>
+          </Link>
 
-            <form
-              action={updateOwnInstitution}
-              className="grid gap-4 lg:grid-cols-2"
-            >
-              <input type="hidden" name="id" value={institution.id} />
-
-              <label className="grid gap-2 lg:col-span-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Nome da instituição
-                </span>
-                <input
-                  name="name"
-                  required
-                  disabled={!canEditInstitution}
-                  defaultValue={institution.name}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  CNPJ
-                </span>
-                <input
-                  name="cnpj"
-                  disabled={!canEditInstitution}
-                  defaultValue={institution.cnpj ?? ""}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Cidade
-                </span>
-                <input
-                  name="city"
-                  disabled={!canEditInstitution}
-                  defaultValue={institution.city ?? ""}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">UF</span>
-                <input
-                  name="state"
-                  maxLength={2}
-                  disabled={!canEditInstitution}
-                  defaultValue={institution.state ?? ""}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm uppercase outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  E-mail
-                </span>
-                <input
-                  name="email"
-                  type="email"
-                  disabled={!canEditInstitution}
-                  defaultValue={institution.email ?? ""}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Telefone
-                </span>
-                <input
-                  name="phone"
-                  disabled={!canEditInstitution}
-                  defaultValue={institution.phone ?? ""}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                />
-              </label>
-
-              <label className="grid gap-2 lg:col-span-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Observações
-                </span>
-                <textarea
-                  name="notes"
-                  rows={3}
-                  disabled={!canEditInstitution}
-                  defaultValue={institution.notes ?? ""}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                />
-              </label>
-
-              {canEditInstitution && (
-                <div className="lg:col-span-2">
-                  <button
-                    type="submit"
-                    className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
-                  >
-                    Atualizar dados
-                  </button>
-                </div>
-              )}
-            </form>
-          </section>
-
-          <section className="mt-8 grid gap-6 xl:grid-cols-[0.85fr_1fr]">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-5">
-                <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-                  Novo curso
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Informe os cursos ofertados pela instituição para futura
-                  análise de compatibilidade com os campos de estágio.
-                </p>
-              </div>
-
-              <form action={createOwnCourse} className="grid gap-4">
-                <input
-                  type="hidden"
-                  name="institution_id"
-                  value={institution.id}
-                />
-
-                <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-slate-700">
-                    Nome do curso
-                  </span>
-                  <input
-                    name="name"
-                    required
-                    className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                    placeholder="Ex.: Direito"
-                  />
-                </label>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="grid gap-2">
-                    <span className="text-sm font-semibold text-slate-700">
-                      Nível
-                    </span>
-                    <select
-                      name="level"
-                      defaultValue="superior"
-                      className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                    >
-                      <option value="superior">Superior</option>
-                      <option value="tecnico">Técnico</option>
-                      <option value="medio">Médio</option>
-                      <option value="outro">Outro</option>
-                    </select>
-                  </label>
-
-                  <label className="grid gap-2">
-                    <span className="text-sm font-semibold text-slate-700">
-                      Carga horária
-                    </span>
-                    <input
-                      name="workload_required"
-                      type="number"
-                      min="0"
-                      className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                      placeholder="Ex.: 300"
-                    />
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
-                >
-                  Cadastrar curso
-                </button>
-              </form>
+          <Link
+            href="/instituicao/cursos"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Cursos
+              </h3>
+              <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Base
+              </span>
             </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Informe os cursos que poderão participar das etapas de estágio.
+            </p>
+          </Link>
 
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-                <h2 className="text-xl font-bold text-slate-950">
-                  Cursos informados
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Cursos vinculados à instituição.
-                </p>
-              </div>
-
-              {courses.length === 0 ? (
-                <div className="p-5 text-sm font-semibold text-slate-600">
-                  Nenhum curso cadastrado.
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {courses.map((course) => (
-                    <div
-                      key={course.id}
-                      className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div>
-                        <p className="font-bold text-slate-950">
-                          {course.name}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {courseLevelLabel(course.level)}
-                          {course.workload_required !== null
-                            ? ` • ${course.workload_required}h`
-                            : ""}
-                        </p>
-                      </div>
-
-                      <span
-                        className={
-                          course.is_active
-                            ? "w-fit rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800 ring-1 ring-teal-200"
-                            : "w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200"
-                        }
-                      >
-                        {course.is_active ? "Ativo" : "Inativo"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+          <Link
+            href="/instituicao/sondagens"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Sondagens
+              </h3>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                Em breve
+              </span>
             </div>
-          </section>
-        </>
-      )}
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Solicite sondagem de campo após validação institucional.
+            </p>
+          </Link>
 
-      <section className="mt-8 grid gap-5 lg:grid-cols-3">
-        <ActionCard
-          title="Cadastro em análise"
-          description="A instituição informa seus dados e aguarda validação da Coordenadoria."
-          status="Fluxo"
-        />
-        <ActionCard
-          title="Cursos informados"
-          description="Os cursos cadastrados serão usados depois para verificar compatibilidade com os campos."
-        />
-        <ActionCard
-          title="Próxima etapa"
-          description="Após validação, a instituição poderá solicitar sondagem de campo de estágio."
-        />
+          <Link
+            href="/instituicao/acordos"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Acordos
+              </h3>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                Em breve
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Acompanhe acordos de cooperação quando houver viabilidade.
+            </p>
+          </Link>
+
+          <Link
+            href="/instituicao/estudantes"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Estudantes
+              </h3>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                Em breve
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Apresente estudantes somente após acordo ativo e vigente.
+            </p>
+          </Link>
+
+          <ActionCard
+            title="Fluxo controlado"
+            description="A instituição só avança para sondagem após cadastro e cursos informados, com validação da Coordenadoria."
+            status="Regra"
+          />
+        </div>
       </section>
     </SystemShell>
   );
