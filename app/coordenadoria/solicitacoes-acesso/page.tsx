@@ -3,7 +3,7 @@ import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getAccessRequests } from "@/lib/queries/access-requests";
 import {
-  markAccessRequestAsReleased,
+  releaseInstitutionAccess,
   updateAccessRequestStatus,
 } from "./actions";
 
@@ -106,9 +106,9 @@ export default async function SolicitacoesAcessoPage() {
 
         <ol className="mt-3 list-inside list-decimal space-y-1 text-sm leading-6 text-slate-600">
           <li>Analise a solicitação e marque como aprovada, se estiver correta.</li>
-          <li>Crie o usuário no Supabase Auth com o e-mail informado.</li>
-          <li>Crie o profile com role <strong>instituicao</strong>, institution_id nulo e is_active true.</li>
-          <li>Registre nesta tela que o acesso foi liberado.</li>
+          <li>Marque a solicitação como aprovada, se estiver correta.</li>
+          <li>Use o botão de liberação para criar o usuário institucional.</li>
+          <li>Informe uma senha provisória e oriente a instituição a alterar depois.</li>
           <li>A instituição acessará o sistema para preencher dados e cursos.</li>
         </ol>
       </section>
@@ -262,18 +262,31 @@ export default async function SolicitacoesAcessoPage() {
 
                       {request.status === "aprovada" && !request.access_released && (
                         <form
-                          action={markAccessRequestAsReleased}
+                          action={releaseInstitutionAccess}
                           className="rounded-2xl border border-teal-200 bg-teal-50 p-4"
                         >
                           <input type="hidden" name="id" value={request.id} />
 
                           <p className="text-sm font-bold text-teal-950">
-                            Registrar liberação do acesso
+                            Liberar acesso institucional
                           </p>
                           <p className="mt-1 text-xs leading-5 text-teal-800">
-                            Use após criar o usuário Auth e o profile com role
-                            instituicao.
+                            Informe uma senha provisória. O sistema criará o usuário Auth e o profile com role instituicao.
                           </p>
+
+                          <label className="mt-3 grid gap-2">
+                            <span className="text-sm font-semibold text-teal-900">
+                              Senha provisória
+                            </span>
+                            <input
+                              name="password"
+                              type="password"
+                              minLength={8}
+                              required
+                              className="h-11 rounded-xl border border-teal-200 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                              placeholder="Mínimo 8 caracteres"
+                            />
+                          </label>
 
                           <label className="mt-3 grid gap-2">
                             <span className="text-sm font-semibold text-teal-900">
@@ -291,7 +304,7 @@ export default async function SolicitacoesAcessoPage() {
                             type="submit"
                             className="mt-3 w-full rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
                           >
-                            Marcar acesso como liberado
+                            Criar usuário e liberar acesso
                           </button>
                         </form>
                       )}
@@ -306,3 +319,5 @@ export default async function SolicitacoesAcessoPage() {
     </SystemShell>
   );
 }
+
+
