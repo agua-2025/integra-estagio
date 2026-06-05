@@ -12,6 +12,9 @@ export type AccessRequest = {
   notes: string | null;
   status: string;
   review_notes: string | null;
+  access_released: boolean;
+  access_released_at: string | null;
+  access_release_notes: string | null;
   created_at: string;
 };
 
@@ -21,7 +24,7 @@ export async function getAccessRequests() {
   const { data, error } = await supabase
     .from("access_requests")
     .select(
-      "id, requester_name, requester_email, requester_phone, institution_name, institution_cnpj, city, state, notes, status, review_notes, created_at",
+      "id, requester_name, requester_email, requester_phone, institution_name, institution_cnpj, city, state, notes, status, review_notes, access_released, access_released_at, access_release_notes, created_at",
     )
     .order("created_at", { ascending: false });
 

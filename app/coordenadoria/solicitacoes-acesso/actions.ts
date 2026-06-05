@@ -8,7 +8,13 @@ function normalizeText(value: FormDataEntryValue | null) {
   return text.length > 0 ? text : null;
 }
 
-const allowedStatus = ["pendente", "em_analise", "aprovada", "rejeitada", "cancelada"];
+const allowedStatus = [
+  "pendente",
+  "em_analise",
+  "aprovada",
+  "rejeitada",
+  "cancelada",
+];
 
 export async function updateAccessRequestStatus(formData: FormData) {
   const supabase = await createClient();
@@ -41,6 +47,38 @@ export async function updateAccessRequestStatus(formData: FormData) {
 
   if (error) {
     throw new Error(`Não foi possível atualizar a solicitação: ${error.message}`);
+  }
+
+  revalidatePath("/coordenadoria/solicitacoes-acesso");
+}
+
+export async function markAccessRequestAsReleased(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = normalizeText(formData.get("id"));
+  const accessReleaseNotes = normalizeText(formData.get("access_release_notes"));
+
+  if (!id) {
+    throw new Error("Solicitação não identificada.");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase
+    .from("access_requests")
+    .update({
+      status: "aprovada",
+      access_released: true,
+      access_released_at: new Date().toISOString(),
+      access_released_by: user?.id ?? null,
+      access_release_notes: accessReleaseNotes,
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`Não foi possível registrar a liberação do acesso: ${error.message}`);
   }
 
   revalidatePath("/coordenadoria/solicitacoes-acesso");
