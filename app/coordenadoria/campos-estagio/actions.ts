@@ -32,6 +32,13 @@ function getSelectedUnitIds(formData: FormData) {
     .filter(Boolean);
 }
 
+function getSelectedCourseIds(formData: FormData) {
+  return formData
+    .getAll("course_ids")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+}
+
 const allowedStatus = [
   "ativo",
   "em_analise",
@@ -93,6 +100,51 @@ async function syncFieldUnits({
   }
 }
 
+async function syncFieldCourses({
+  fieldId,
+  courseIds,
+}: {
+  fieldId: string;
+  courseIds: string[];
+}) {
+  const supabase = await createClient();
+
+  const { error: deactivateError } = await supabase
+    .from("field_courses")
+    .update({
+      is_active: false,
+    })
+    .eq("field_id", fieldId);
+
+  if (deactivateError) {
+    throw new Error(
+      `Não foi possível atualizar os cursos compatíveis: ${deactivateError.message}`,
+    );
+  }
+
+  if (courseIds.length === 0) {
+    return;
+  }
+
+  const rows = courseIds.map((courseId) => ({
+    field_id: fieldId,
+    course_id: courseId,
+    is_active: true,
+  }));
+
+  const { error: upsertError } = await supabase
+    .from("field_courses")
+    .upsert(rows, {
+      onConflict: "field_id,course_id",
+    });
+
+  if (upsertError) {
+    throw new Error(
+      `Não foi possível vincular os cursos ao campo: ${upsertError.message}`,
+    );
+  }
+}
+
 export async function createInternshipField(formData: FormData) {
   const supabase = await createClient();
 
@@ -105,6 +157,7 @@ export async function createInternshipField(formData: FormData) {
   const supervisorRequired = formData.get("supervisor_required") === "on";
   const status = String(formData.get("status") ?? "em_analise");
   const unitIds = getSelectedUnitIds(formData);
+  const courseIds = getSelectedCourseIds(formData);
 
   if (!title) {
     throw new Error("Informe o nome do campo de estágio.");
@@ -115,7 +168,7 @@ export async function createInternshipField(formData: FormData) {
   }
 
   if (unitIds.length === 0 && (status === "ativo" || isPublic)) {
-    redirect("/coordenadoria/campos-estagio");
+    redirect("/coordenadoria/campos-estagio?erro=sem-unidade-publicada");
   }
 
   const { data, error } = await supabase
@@ -146,6 +199,11 @@ export async function createInternshipField(formData: FormData) {
     supervisorRequired,
   });
 
+  await syncFieldCourses({
+    fieldId: data.id,
+    courseIds,
+  });
+
   revalidatePath("/coordenadoria/campos-estagio");
   revalidatePath("/campos-de-estagio");
 }
@@ -163,6 +221,7 @@ export async function updateInternshipField(formData: FormData) {
   const isPublic = formData.get("is_public") === "on";
   const supervisorRequired = formData.get("supervisor_required") === "on";
   const unitIds = getSelectedUnitIds(formData);
+  const courseIds = getSelectedCourseIds(formData);
 
   if (!id) {
     throw new Error("Campo não identificado.");
@@ -177,7 +236,7 @@ export async function updateInternshipField(formData: FormData) {
   }
 
   if (unitIds.length === 0 && (status === "ativo" || isPublic)) {
-    redirect(`/coordenadoria/campos-estagio/${id}`);
+    redirect(`/coordenadoria/campos-estagio/${id}?erro=sem-unidade-publicada`);
   }
 
   const { error } = await supabase
@@ -204,6 +263,11 @@ export async function updateInternshipField(formData: FormData) {
     availableSlots,
     shift,
     supervisorRequired,
+  });
+
+  await syncFieldCourses({
+    fieldId: id,
+    courseIds,
   });
 
   revalidatePath("/coordenadoria/campos-estagio");
@@ -266,5 +330,3 @@ export async function updateFieldStatus(formData: FormData) {
   revalidatePath("/coordenadoria/campos-estagio");
   revalidatePath("/campos-de-estagio");
 }
-
-

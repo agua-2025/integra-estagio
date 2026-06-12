@@ -33,6 +33,39 @@ export type FieldUnitLink = {
     | null;
 };
 
+export type ActiveCourse = {
+  id: string;
+  name: string;
+  institution_id: string;
+  is_active: boolean;
+  institutions:
+    | {
+        id: string;
+        name: string;
+      }[]
+    | null;
+};
+
+export type FieldCourseLink = {
+  id: string;
+  field_id: string;
+  course_id: string;
+  is_active: boolean;
+  courses:
+    | {
+        id: string;
+        name: string;
+        institution_id: string;
+        institutions:
+          | {
+              id: string;
+              name: string;
+            }[]
+          | null;
+      }[]
+    | null;
+};
+
 export async function getDashboardInternshipFields() {
   const supabase = await createClient();
 
@@ -101,6 +134,52 @@ export async function getFieldUnitLinks(fieldId: string) {
 
   return {
     links: (data ?? []) as FieldUnitLink[],
+    error: null,
+  };
+}
+
+export async function getActiveCourses() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("courses")
+    .select("id, name, institution_id, is_active, institutions(id, name)")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    return {
+      courses: [] as ActiveCourse[],
+      error: error.message,
+    };
+  }
+
+  return {
+    courses: (data ?? []) as ActiveCourse[],
+    error: null,
+  };
+}
+
+export async function getFieldCourseLinks(fieldId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("field_courses")
+    .select(
+      "id, field_id, course_id, is_active, courses(id, name, institution_id, institutions(id, name))",
+    )
+    .eq("field_id", fieldId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return {
+      links: [] as FieldCourseLink[],
+      error: error.message,
+    };
+  }
+
+  return {
+    links: (data ?? []) as FieldCourseLink[],
     error: null,
   };
 }
