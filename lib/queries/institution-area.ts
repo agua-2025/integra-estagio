@@ -19,6 +19,19 @@ export type InstitutionAreaInstitution = {
   email: string | null;
   status: string;
   notes: string | null;
+
+  legal_name: string | null;
+  trade_name: string | null;
+  address_line: string | null;
+  address_number: string | null;
+  address_complement: string | null;
+  neighborhood: string | null;
+  zip_code: string | null;
+  legal_representative_name: string | null;
+  legal_representative_role: string | null;
+  internship_sector_contact_name: string | null;
+  internship_sector_contact_email: string | null;
+  internship_sector_contact_phone: string | null;
 };
 
 export type InstitutionAreaCourse = {
@@ -29,6 +42,30 @@ export type InstitutionAreaCourse = {
   workload_required: number | null;
   is_active: boolean;
 };
+
+const institutionSelect = `
+  id,
+  name,
+  cnpj,
+  city,
+  state,
+  phone,
+  email,
+  status,
+  notes,
+  legal_name,
+  trade_name,
+  address_line,
+  address_number,
+  address_complement,
+  neighborhood,
+  zip_code,
+  legal_representative_name,
+  legal_representative_role,
+  internship_sector_contact_name,
+  internship_sector_contact_email,
+  internship_sector_contact_phone
+`;
 
 export async function getInstitutionAreaData() {
   const supabase = await createClient();
@@ -74,7 +111,7 @@ export async function getInstitutionAreaData() {
   const [institutionResult, coursesResult] = await Promise.all([
     supabase
       .from("institutions")
-      .select("id, name, cnpj, city, state, phone, email, status, notes")
+      .select(institutionSelect)
       .eq("id", profile.institution_id)
       .single(),
 

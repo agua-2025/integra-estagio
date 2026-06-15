@@ -24,6 +24,41 @@ function normalizeInteger(value: FormDataEntryValue | null) {
   return number;
 }
 
+function getInstitutionPayload(formData: FormData) {
+  return {
+    name: normalizeText(formData.get("name")),
+    cnpj: normalizeText(formData.get("cnpj")),
+    city: normalizeText(formData.get("city")),
+    state: normalizeText(formData.get("state")),
+    phone: normalizeText(formData.get("phone")),
+    email: normalizeText(formData.get("email")),
+    notes: normalizeText(formData.get("notes")),
+
+    legal_name: normalizeText(formData.get("legal_name")),
+    trade_name: normalizeText(formData.get("trade_name")),
+    address_line: normalizeText(formData.get("address_line")),
+    address_number: normalizeText(formData.get("address_number")),
+    address_complement: normalizeText(formData.get("address_complement")),
+    neighborhood: normalizeText(formData.get("neighborhood")),
+    zip_code: normalizeText(formData.get("zip_code")),
+    legal_representative_name: normalizeText(
+      formData.get("legal_representative_name"),
+    ),
+    legal_representative_role: normalizeText(
+      formData.get("legal_representative_role"),
+    ),
+    internship_sector_contact_name: normalizeText(
+      formData.get("internship_sector_contact_name"),
+    ),
+    internship_sector_contact_email: normalizeText(
+      formData.get("internship_sector_contact_email"),
+    ),
+    internship_sector_contact_phone: normalizeText(
+      formData.get("internship_sector_contact_phone"),
+    ),
+  };
+}
+
 const allowedCourseLevels = ["superior", "tecnico", "medio", "outro"];
 
 export async function createOwnInstitution(formData: FormData) {
@@ -55,28 +90,16 @@ export async function createOwnInstitution(formData: FormData) {
     throw new Error("Este usuário já está vinculado a uma instituição.");
   }
 
-  const name = normalizeText(formData.get("name"));
-  const cnpj = normalizeText(formData.get("cnpj"));
-  const city = normalizeText(formData.get("city"));
-  const state = normalizeText(formData.get("state"));
-  const phone = normalizeText(formData.get("phone"));
-  const email = normalizeText(formData.get("email"));
-  const notes = normalizeText(formData.get("notes"));
+  const payload = getInstitutionPayload(formData);
 
-  if (!name) {
+  if (!payload.name) {
     throw new Error("Informe o nome da instituição.");
   }
 
   const { data: institution, error: institutionError } = await supabase
     .from("institutions")
     .insert({
-      name,
-      cnpj,
-      city,
-      state,
-      phone,
-      email,
-      notes,
+      ...payload,
       status: "em_analise",
     })
     .select("id")
@@ -108,33 +131,19 @@ export async function updateOwnInstitution(formData: FormData) {
   const supabase = await createClient();
 
   const id = normalizeText(formData.get("id"));
-  const name = normalizeText(formData.get("name"));
-  const cnpj = normalizeText(formData.get("cnpj"));
-  const city = normalizeText(formData.get("city"));
-  const state = normalizeText(formData.get("state"));
-  const phone = normalizeText(formData.get("phone"));
-  const email = normalizeText(formData.get("email"));
-  const notes = normalizeText(formData.get("notes"));
+  const payload = getInstitutionPayload(formData);
 
   if (!id) {
     throw new Error("Instituição não identificada.");
   }
 
-  if (!name) {
+  if (!payload.name) {
     throw new Error("Informe o nome da instituição.");
   }
 
   const { error } = await supabase
     .from("institutions")
-    .update({
-      name,
-      cnpj,
-      city,
-      state,
-      phone,
-      email,
-      notes,
-    })
+    .update(payload)
     .eq("id", id);
 
   if (error) {
