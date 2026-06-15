@@ -1,89 +1,104 @@
 import Link from "next/link";
-import { ActionCard } from "@/components/system/ActionCard";
 import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
+import { getCoordinationInquiriesData } from "@/lib/queries/coordination-inquiries";
 
-const summaries = [
-  {
-    label: "Recebidas",
-    value: "0",
-    description: "Sondagens enviadas por instituições de ensino.",
-  },
-  {
-    label: "Aguardando unidades",
-    value: "0",
-    description: "Consultas encaminhadas para manifestação das unidades.",
-  },
-  {
-    label: "Viáveis",
-    value: "0",
-    description: "Sondagens com possibilidade de campo identificada.",
-  },
-  {
-    label: "Sem campo",
-    value: "0",
-    description: "Consultas sem disponibilidade no momento.",
-  },
-];
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const inquiries = [
-  {
-    institution: "Faculdade ou Universidade Exemplo",
-    course: "Direito",
-    quantity: "5 estudantes",
-    period: "2º semestre de 2026",
-    workload: "100h",
-    area: "Jurídico, Administração ou Apoio Legislativo",
-    status: "Aguardando manifestação",
-    description:
-      "Instituição consulta a possibilidade de campo para estágio curricular supervisionado obrigatório na área jurídica ou administrativa.",
-  },
-  {
-    institution: "Instituição Cooperada Exemplo",
-    course: "Serviço Social",
-    quantity: "3 estudantes",
-    period: "Conforme calendário acadêmico",
-    workload: "120h",
-    area: "Assistência Social",
-    status: "Viabilidade parcial",
-    description:
-      "Consulta com possibilidade condicionada à manifestação da unidade responsável e disponibilidade de supervisor.",
-  },
-  {
-    institution: "Centro de Ensino Técnico Exemplo",
-    course: "Técnico em Administração",
-    quantity: "2 estudantes",
-    period: "A definir",
-    workload: "80h",
-    area: "Administração e Gestão Pública",
-    status: "Recebida",
-    description:
-      "Sondagem inicial para verificação de campo em rotinas administrativas e apoio institucional.",
-  },
-];
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    recebida: "Recebida",
+    em_analise: "Em análise",
+    encaminhada: "Encaminhada",
+    viavel: "Viável",
+    viavel_parcial: "Viável parcialmente",
+    inviavel: "Sem campo disponível",
+    pendente: "Pendente",
+  };
 
-export default function SondagensPage() {
+  return labels[status] ?? status;
+}
+
+function statusClass(status: string) {
+  if (status === "viavel") {
+    return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
+  }
+
+  if (status === "viavel_parcial" || status === "em_analise" || status === "encaminhada") {
+    return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
+  }
+
+  if (status === "inviavel") {
+    return "bg-red-50 text-red-700 ring-1 ring-red-200";
+  }
+
+  return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+}
+
+function formatNumber(value: number | null) {
+  if (value === null || value === undefined) {
+    return "Não informado";
+  }
+
+  return String(value);
+}
+
+export default async function SondagensPage() {
+  const { inquiries, error } = await getCoordinationInquiriesData();
+
+  const receivedCount = inquiries.filter((item) => item.status === "recebida").length;
+  const inAnalysisCount = inquiries.filter((item) =>
+    ["em_analise", "encaminhada", "pendente"].includes(item.status),
+  ).length;
+  const viableCount = inquiries.filter((item) =>
+    ["viavel", "viavel_parcial"].includes(item.status),
+  ).length;
+  const unavailableCount = inquiries.filter((item) => item.status === "inviavel").length;
+
+  const summaries = [
+    {
+      label: "Recebidas",
+      value: String(receivedCount),
+      description: "Sondagens aguardando análise inicial.",
+    },
+    {
+      label: "Em análise",
+      value: String(inAnalysisCount),
+      description: "Sondagens em análise ou encaminhadas.",
+    },
+    {
+      label: "Viáveis",
+      value: String(viableCount),
+      description: "Sondagens com possibilidade de campo.",
+    },
+    {
+      label: "Sem campo",
+      value: String(unavailableCount),
+      description: "Sondagens sem disponibilidade no momento.",
+    },
+  ];
+
   return (
     <SystemShell
       areaLabel="Coordenadoria"
       title="Sondagens de Campo de Estágio"
-      description="Analise consultas enviadas pelas instituições, encaminhe às unidades municipais e consolide a viabilidade dos campos de estágio."
+      description="Visualize as sondagens enviadas pelas instituições de ensino e acompanhe a etapa de análise."
     >
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6">
         <Link
           href="/coordenadoria"
           className="text-sm font-semibold text-teal-700 hover:text-teal-900"
         >
           Voltar para a Coordenadoria
         </Link>
-
-        <button
-          type="button"
-          className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
-        >
-          Nova sondagem
-        </button>
       </div>
+
+      {error && (
+        <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          Não foi possível carregar as sondagens: {error}
+        </section>
+      )}
 
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         {summaries.map((item) => (
@@ -94,120 +109,126 @@ export default function SondagensPage() {
       <section className="mt-8">
         <div className="mb-5">
           <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-            Consultas recebidas
+            Sondagens recebidas
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Estes registros são exemplos visuais. Na versão com banco de dados,
-            a Coordenadoria poderá receber sondagens, encaminhar para unidades,
-            registrar manifestações e responder à instituição sobre a viabilidade
-            do campo de estágio.
+            Lista real das consultas enviadas pelas instituições. O encaminhamento
+            às unidades municipais será implementado na próxima etapa.
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-3">
-          {inquiries.map((inquiry) => (
-            <article
-              key={`${inquiry.institution}-${inquiry.course}`}
-              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-950">
-                    {inquiry.course}
-                  </h3>
-                  <p className="mt-1 text-sm font-semibold text-slate-700">
-                    {inquiry.institution}
-                  </p>
-                </div>
-
-                <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                  {inquiry.status}
-                </span>
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          {inquiries.length === 0 ? (
+            <div className="p-6">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <h3 className="font-bold text-amber-950">
+                  Nenhuma sondagem recebida.
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-amber-900">
+                  As sondagens enviadas pelas instituições aparecerão aqui.
+                </p>
               </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {inquiries.map((inquiry) => (
+                <article key={inquiry.id} className="p-5">
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-bold text-slate-950">
+                          {inquiry.course_name}
+                        </h3>
 
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                {inquiry.description}
-              </p>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(
+                            inquiry.status,
+                          )}`}
+                        >
+                          {statusLabel(inquiry.status)}
+                        </span>
+                      </div>
 
-              <div className="mt-5 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Área pretendida
-                  </p>
-                  <p className="mt-1 font-semibold text-slate-800">
-                    {inquiry.area}
-                  </p>
-                </div>
+                      <p className="mt-1 text-sm font-semibold text-slate-700">
+                        {inquiry.institution_name}
+                      </p>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      Quantidade
-                    </p>
-                    <p className="mt-1 font-semibold text-slate-800">
-                      {inquiry.quantity}
-                    </p>
+                      <p className="mt-3 text-sm leading-6 text-slate-600">
+                        <strong>Área pretendida:</strong>{" "}
+                        {inquiry.requested_area ?? "Não informada"}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm sm:grid-cols-3 xl:min-w-[520px]">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                          Estudantes
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {formatNumber(inquiry.requested_students)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                          Carga horária
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {inquiry.required_workload !== null
+                            ? `${inquiry.required_workload}h`
+                            : "Não informada"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                          Período
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-800">
+                          {inquiry.intended_period ?? "Não informado"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      Carga
-                    </p>
-                    <p className="mt-1 font-semibold text-slate-800">
-                      {inquiry.workload}
-                    </p>
-                  </div>
+                  {inquiry.notes && (
+                    <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                        Observações da instituição
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        {inquiry.notes}
+                      </p>
+                    </div>
+                  )}
 
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      Período
-                    </p>
-                    <p className="mt-1 font-semibold text-slate-800">
-                      {inquiry.period}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                    >
+                      Ver detalhes
+                    </button>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
-                >
-                  Ver detalhes
-                </button>
-                <button
-                  type="button"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
-                >
-                  Encaminhar unidade
-                </button>
-                <button
-                  type="button"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
-                >
-                  Responder
-                </button>
-              </div>
-            </article>
-          ))}
+                    <button
+                      type="button"
+                      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                    >
+                      Encaminhar unidade
+                    </button>
+
+                    <button
+                      type="button"
+                      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                    >
+                      Responder
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
-      </section>
-
-      <section className="mt-8 grid gap-5 lg:grid-cols-3">
-        <ActionCard
-          title="Encaminhamento às unidades"
-          description="A Coordenadoria poderá direcionar a sondagem para uma ou mais unidades municipais, solicitando manifestação sobre disponibilidade."
-          status="Fluxo"
-        />
-        <ActionCard
-          title="Resposta de viabilidade"
-          description="A resposta poderá indicar viabilidade total, parcial, inexistência de campo ou necessidade de complementação."
-        />
-        <ActionCard
-          title="Conversão em acordo"
-          description="Quando houver viabilidade, a sondagem poderá permitir a abertura do pedido de Acordo de Cooperação Técnica."
-        />
       </section>
     </SystemShell>
   );
