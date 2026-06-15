@@ -6,7 +6,16 @@ import { createOwnInstitution, updateOwnInstitution } from "../actions";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function InstituicaoCadastroPage() {
+type InstituicaoCadastroPageProps = {
+  searchParams?: Promise<{
+    sucesso?: string;
+  }>;
+};
+
+export default async function InstituicaoCadastroPage({
+  searchParams,
+}: InstituicaoCadastroPageProps) {
+  const params = await searchParams;
   const { institution, error } = await getInstitutionAreaData();
 
   const canEditInstitution =
@@ -34,6 +43,12 @@ export default async function InstituicaoCadastroPage() {
       {error && (
         <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {error}
+        </section>
+      )}
+
+      {params?.sucesso === "1" && (
+        <section className="mb-6 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+          Dados institucionais salvos com sucesso. A Coordenadoria poderá analisar e validar o cadastro.
         </section>
       )}
 
@@ -361,3 +376,4 @@ export default async function InstituicaoCadastroPage() {
     </SystemShell>
   );
 }
+

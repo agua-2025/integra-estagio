@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 function normalizeText(value: FormDataEntryValue | null) {
@@ -125,6 +126,8 @@ export async function createOwnInstitution(formData: FormData) {
   }
 
   revalidatePath("/instituicao");
+  revalidatePath("/instituicao/cadastro");
+  redirect("/instituicao/cadastro?sucesso=1");
 }
 
 export async function updateOwnInstitution(formData: FormData) {
@@ -151,6 +154,8 @@ export async function updateOwnInstitution(formData: FormData) {
   }
 
   revalidatePath("/instituicao");
+  revalidatePath("/instituicao/cadastro");
+  redirect("/instituicao/cadastro?sucesso=1");
 }
 
 export async function createOwnCourse(formData: FormData) {
