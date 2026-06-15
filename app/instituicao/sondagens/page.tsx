@@ -18,6 +18,7 @@ function statusLabel(status: string) {
     recebida: "Recebida",
     em_analise: "Em análise",
     encaminhada: "Encaminhada",
+    encaminhada_unidade: "Encaminhada à unidade",
     viavel: "Viável",
     viavel_parcial: "Viável parcialmente",
     inviavel: "Sem campo disponível",
@@ -32,7 +33,7 @@ function statusClass(status: string) {
     return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
   }
 
-  if (status === "viavel_parcial" || status === "em_analise" || status === "encaminhada") {
+  if (status === "viavel_parcial" || status === "em_analise" || status === "encaminhada" || status === "encaminhada_unidade") {
     return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
   }
 
@@ -61,7 +62,7 @@ export default async function InstituicaoSondagensPage({
   const institutionIsActive = institution?.status === "ativa";
   const receivedCount = inquiries.filter((item) => item.status === "recebida").length;
   const inAnalysisCount = inquiries.filter((item) =>
-    ["em_analise", "encaminhada", "pendente"].includes(item.status),
+    ["em_analise", "encaminhada", "encaminhada_unidade", "aguardando_unidade", "pendente"].includes(item.status),
   ).length;
   const viableCount = inquiries.filter((item) =>
     ["viavel", "viavel_parcial"].includes(item.status),
@@ -181,14 +182,14 @@ export default async function InstituicaoSondagensPage({
 
               <label className="grid gap-2">
                 <span className="text-sm font-semibold text-slate-700">
-                  Área pretendida
+                  Área ou setor de interesse
                 </span>
                 <input
                   name="requested_area"
                   required
                   disabled={!institutionIsActive}
                   className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                  placeholder="Ex.: jurídico, administrativo, saúde, assistência social..."
+                  placeholder="Ex.: jurídico, administrativo, saúde, assistência social, determinada secretaria ou setor..."
                 />
               </label>
 
@@ -341,3 +342,5 @@ export default async function InstituicaoSondagensPage({
     </SystemShell>
   );
 }
+
+

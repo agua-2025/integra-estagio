@@ -2,15 +2,23 @@ import Link from "next/link";
 import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getCoordinationInquiriesData } from "@/lib/queries/coordination-inquiries";
+import { forwardInquiryToUnit } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+type SondagensPageProps = {
+  searchParams?: Promise<{
+    encaminhada?: string;
+  }>;
+};
 
 function statusLabel(status: string) {
   const labels: Record<string, string> = {
     recebida: "Recebida",
     em_analise: "Em análise",
     encaminhada: "Encaminhada",
+    encaminhada_unidade: "Encaminhada à unidade",
     viavel: "Viável",
     viavel_parcial: "Viável parcialmente",
     inviavel: "Sem campo disponível",
@@ -25,7 +33,7 @@ function statusClass(status: string) {
     return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
   }
 
-  if (status === "viavel_parcial" || status === "em_analise" || status === "encaminhada") {
+  if (status === "viavel_parcial" || status === "em_analise" || status === "encaminhada" || status === "encaminhada_unidade") {
     return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
   }
 
@@ -44,12 +52,13 @@ function formatNumber(value: number | null) {
   return String(value);
 }
 
-export default async function SondagensPage() {
-  const { inquiries, error } = await getCoordinationInquiriesData();
+export default async function SondagensPage({ searchParams }: SondagensPageProps) {
+  const params = await searchParams;
+  const { inquiries, units, error } = await getCoordinationInquiriesData();
 
   const receivedCount = inquiries.filter((item) => item.status === "recebida").length;
   const inAnalysisCount = inquiries.filter((item) =>
-    ["em_analise", "encaminhada", "pendente"].includes(item.status),
+    ["em_analise", "encaminhada", "encaminhada_unidade", "aguardando_unidade", "pendente"].includes(item.status),
   ).length;
   const viableCount = inquiries.filter((item) =>
     ["viavel", "viavel_parcial"].includes(item.status),
@@ -83,7 +92,7 @@ export default async function SondagensPage() {
     <SystemShell
       areaLabel="Coordenadoria"
       title="Sondagens de Campo de Estágio"
-      description="Visualize as sondagens enviadas pelas instituições de ensino e acompanhe a etapa de análise."
+      description="Visualize as sondagens enviadas pelas instituições e encaminhe às unidades municipais para manifestação."
     >
       <div className="mb-6">
         <Link
@@ -93,6 +102,12 @@ export default async function SondagensPage() {
           Voltar para a Coordenadoria
         </Link>
       </div>
+
+      {params?.encaminhada === "1" && (
+        <section className="mb-6 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+          Sondagem encaminhada com sucesso para a unidade municipal.
+        </section>
+      )}
 
       {error && (
         <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
@@ -112,8 +127,8 @@ export default async function SondagensPage() {
             Sondagens recebidas
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Lista real das consultas enviadas pelas instituições. O encaminhamento
-            às unidades municipais será implementado na próxima etapa.
+            Encaminhe as sondagens para uma ou mais unidades municipais, conforme
+            a área pretendida e a possibilidade de campo de estágio.
           </p>
         </div>
 
@@ -157,6 +172,13 @@ export default async function SondagensPage() {
                         <strong>Área pretendida:</strong>{" "}
                         {inquiry.requested_area ?? "Não informada"}
                       </p>
+
+                      {inquiry.forwarded_units.length > 0 && (
+                        <p className="mt-2 text-sm leading-6 text-teal-800">
+                          <strong>Encaminhada para:</strong>{" "}
+                          {inquiry.forwarded_units.join(", ")}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm sm:grid-cols-3 xl:min-w-[520px]">
@@ -202,28 +224,38 @@ export default async function SondagensPage() {
                     </div>
                   )}
 
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
-                    >
-                      Ver detalhes
-                    </button>
+                  <form
+                    action={forwardInquiryToUnit}
+                    className="mt-5 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-end"
+                  >
+                    <input type="hidden" name="inquiry_id" value={inquiry.id} />
+
+                    <label className="grid flex-1 gap-2">
+                      <span className="text-sm font-semibold text-slate-700">
+                        Encaminhar para unidade municipal
+                      </span>
+                      <select
+                        name="municipal_unit_id"
+                        required
+                        className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                      >
+                        <option value="">Selecione a unidade</option>
+                        {units.map((unit) => (
+                          <option key={unit.id} value={unit.id}>
+                            {unit.name}
+                            {unit.department ? ` - ${unit.department}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
                     <button
-                      type="button"
-                      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                      type="submit"
+                      className="rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
                     >
-                      Encaminhar unidade
+                      Encaminhar
                     </button>
-
-                    <button
-                      type="button"
-                      className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
-                    >
-                      Responder
-                    </button>
-                  </div>
+                  </form>
                 </article>
               ))}
             </div>
@@ -233,3 +265,4 @@ export default async function SondagensPage() {
     </SystemShell>
   );
 }
+

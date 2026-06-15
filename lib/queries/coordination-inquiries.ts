@@ -13,6 +13,15 @@ export type CoordinationInquiry = {
   created_at: string;
   institution_name: string;
   course_name: string;
+  forwarded_units: string[];
+};
+
+export type CoordinationMunicipalUnit = {
+  id: string;
+  name: string;
+  department: string | null;
+  responsible_name: string | null;
+  is_active: boolean;
 };
 
 type InquiryRow = {
@@ -38,6 +47,11 @@ type CourseRow = {
   name: string;
 };
 
+type InquiryUnitResponseRow = {
+  inquiry_id: string;
+  municipal_unit_id: string;
+};
+
 export async function getCoordinationInquiriesData() {
   const supabase = await createClient();
 
@@ -49,6 +63,7 @@ export async function getCoordinationInquiriesData() {
   if (userError || !user) {
     return {
       inquiries: [] as CoordinationInquiry[],
+      units: [] as CoordinationMunicipalUnit[],
       error: "Usuário não autenticado.",
     };
   }
@@ -67,25 +82,41 @@ export async function getCoordinationInquiriesData() {
   ) {
     return {
       inquiries: [] as CoordinationInquiry[],
+      units: [] as CoordinationMunicipalUnit[],
       error: "Usuário sem permissão para visualizar sondagens.",
     };
   }
 
-  const { data: inquiryRows, error: inquiriesError } = await supabase
-    .from("inquiries")
-    .select(
-      "id, institution_id, course_id, requested_area, requested_students, required_workload, intended_period, notes, status, created_at",
-    )
-    .order("created_at", { ascending: false });
+  const [inquiriesResult, unitsResult, responsesResult] = await Promise.all([
+    supabase
+      .from("inquiries")
+      .select(
+        "id, institution_id, course_id, requested_area, requested_students, required_workload, intended_period, notes, status, created_at",
+      )
+      .order("created_at", { ascending: false }),
 
-  if (inquiriesError) {
+    supabase
+      .from("municipal_units")
+      .select("id, name, department, responsible_name, is_active")
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+
+    supabase
+      .from("inquiry_unit_responses")
+      .select("inquiry_id, municipal_unit_id"),
+  ]);
+
+  if (inquiriesResult.error) {
     return {
       inquiries: [] as CoordinationInquiry[],
-      error: inquiriesError.message,
+      units: [] as CoordinationMunicipalUnit[],
+      error: inquiriesResult.error.message,
     };
   }
 
-  const inquiriesRaw = (inquiryRows ?? []) as InquiryRow[];
+  const inquiriesRaw = (inquiriesResult.data ?? []) as InquiryRow[];
+  const units = (unitsResult.data ?? []) as CoordinationMunicipalUnit[];
+  const responses = (responsesResult.data ?? []) as InquiryUnitResponseRow[];
 
   const institutionIds = Array.from(
     new Set(
@@ -121,6 +152,19 @@ export async function getCoordinationInquiriesData() {
   );
 
   const courseNames = new Map(courses.map((course) => [course.id, course.name]));
+  const unitNames = new Map(units.map((unit) => [unit.id, unit.name]));
+
+  const forwardedByInquiry = new Map<string, string[]>();
+
+  for (const response of responses) {
+    const current = forwardedByInquiry.get(response.inquiry_id) ?? [];
+    const unitName = unitNames.get(response.municipal_unit_id);
+
+    if (unitName) {
+      current.push(unitName);
+      forwardedByInquiry.set(response.inquiry_id, current);
+    }
+  }
 
   const inquiries = inquiriesRaw.map((inquiry) => ({
     ...inquiry,
@@ -132,10 +176,17 @@ export async function getCoordinationInquiriesData() {
       inquiry.course_id && courseNames.has(inquiry.course_id)
         ? courseNames.get(inquiry.course_id)!
         : "Curso não identificado",
+    forwarded_units: forwardedByInquiry.get(inquiry.id) ?? [],
   })) as CoordinationInquiry[];
 
   return {
     inquiries,
-    error: institutionsResult.error?.message ?? coursesResult.error?.message ?? null,
+    units,
+    error:
+      institutionsResult.error?.message ??
+      coursesResult.error?.message ??
+      unitsResult.error?.message ??
+      responsesResult.error?.message ??
+      null,
   };
 }
