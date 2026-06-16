@@ -52,6 +52,33 @@ function formatNumber(value: number | null) {
   return String(value);
 }
 
+function unitResponseLabel(status: string) {
+  const labels: Record<string, string> = {
+    campo_disponivel: "Campo disponível",
+    campo_com_limite: "Campo com limite",
+    sem_disponibilidade: "Sem disponibilidade",
+    precisa_analise: "Precisa de análise",
+  };
+
+  return labels[status] ?? status;
+}
+
+function unitResponseClass(status: string) {
+  if (status === "campo_disponivel") {
+    return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
+  }
+
+  if (status === "campo_com_limite" || status === "precisa_analise") {
+    return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
+  }
+
+  if (status === "sem_disponibilidade") {
+    return "bg-red-50 text-red-700 ring-1 ring-red-200";
+  }
+
+  return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+}
+
 export default async function SondagensPage({ searchParams }: SondagensPageProps) {
   const params = await searchParams;
   const { inquiries, units, error } = await getCoordinationInquiriesData();
@@ -224,6 +251,86 @@ export default async function SondagensPage({ searchParams }: SondagensPageProps
                     </div>
                   )}
 
+                  {inquiry.unit_responses.length > 0 && (
+                    <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                        Respostas das unidades
+                      </p>
+
+                      <div className="mt-3 grid gap-3">
+                        {inquiry.unit_responses.map((response) => (
+                          <div
+                            key={response.id}
+                            className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                          >
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <p className="font-bold text-slate-950">
+                                  {response.unit_name}
+                                </p>
+                                {response.supervisor_name && (
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    Supervisor: {response.supervisor_name}
+                                  </p>
+                                )}
+                              </div>
+
+                              <span
+                                className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${unitResponseClass(
+                                  response.response_status,
+                                )}`}
+                              >
+                                {unitResponseLabel(response.response_status)}
+                              </span>
+                            </div>
+
+                            <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                  Vagas possíveis
+                                </p>
+                                <p className="mt-1 font-semibold text-slate-800">
+                                  {formatNumber(response.available_slots)}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                  Horário
+                                </p>
+                                <p className="mt-1 font-semibold text-slate-800">
+                                  {response.possible_schedule ?? "Não informado"}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                  Situação
+                                </p>
+                                <p className="mt-1 font-semibold text-slate-800">
+                                  {unitResponseLabel(response.response_status)}
+                                </p>
+                              </div>
+                            </div>
+
+                            {response.compatible_activities && (
+                              <p className="mt-3 text-sm leading-6 text-slate-700">
+                                <strong>Atividades compatíveis:</strong>{" "}
+                                {response.compatible_activities}
+                              </p>
+                            )}
+
+                            {response.notes && (
+                              <p className="mt-2 text-sm leading-6 text-slate-700">
+                                <strong>Observações:</strong> {response.notes}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <form
                     action={forwardInquiryToUnit}
                     className="mt-5 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-end"
@@ -265,4 +372,5 @@ export default async function SondagensPage({ searchParams }: SondagensPageProps
     </SystemShell>
   );
 }
+
 

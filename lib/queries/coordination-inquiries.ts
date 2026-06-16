@@ -1,5 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type CoordinationInquiryUnitResponse = {
+  id: string;
+  inquiry_id: string;
+  municipal_unit_id: string;
+  unit_name: string;
+  response_status: string;
+  available_slots: number | null;
+  possible_schedule: string | null;
+  compatible_activities: string | null;
+  supervisor_name: string | null;
+  notes: string | null;
+};
+
 export type CoordinationInquiry = {
   id: string;
   institution_id: string | null;
@@ -14,6 +27,7 @@ export type CoordinationInquiry = {
   institution_name: string;
   course_name: string;
   forwarded_units: string[];
+  unit_responses: CoordinationInquiryUnitResponse[];
 };
 
 export type CoordinationMunicipalUnit = {
@@ -48,8 +62,15 @@ type CourseRow = {
 };
 
 type InquiryUnitResponseRow = {
+  id: string;
   inquiry_id: string;
   municipal_unit_id: string;
+  response_status: string;
+  available_slots: number | null;
+  possible_schedule: string | null;
+  compatible_activities: string | null;
+  supervisor_name: string | null;
+  notes: string | null;
 };
 
 export async function getCoordinationInquiriesData() {
@@ -103,7 +124,9 @@ export async function getCoordinationInquiriesData() {
 
     supabase
       .from("inquiry_unit_responses")
-      .select("inquiry_id, municipal_unit_id"),
+      .select(
+        "id, inquiry_id, municipal_unit_id, response_status, available_slots, possible_schedule, compatible_activities, supervisor_name, notes",
+      ),
   ]);
 
   if (inquiriesResult.error) {
@@ -154,30 +177,37 @@ export async function getCoordinationInquiriesData() {
   const courseNames = new Map(courses.map((course) => [course.id, course.name]));
   const unitNames = new Map(units.map((unit) => [unit.id, unit.name]));
 
-  const forwardedByInquiry = new Map<string, string[]>();
+  const responsesByInquiry = new Map<string, CoordinationInquiryUnitResponse[]>();
 
   for (const response of responses) {
-    const current = forwardedByInquiry.get(response.inquiry_id) ?? [];
-    const unitName = unitNames.get(response.municipal_unit_id);
+    const current = responsesByInquiry.get(response.inquiry_id) ?? [];
 
-    if (unitName) {
-      current.push(unitName);
-      forwardedByInquiry.set(response.inquiry_id, current);
-    }
+    current.push({
+      ...response,
+      unit_name:
+        unitNames.get(response.municipal_unit_id) ?? "Unidade não identificada",
+    });
+
+    responsesByInquiry.set(response.inquiry_id, current);
   }
 
-  const inquiries = inquiriesRaw.map((inquiry) => ({
-    ...inquiry,
-    institution_name:
-      inquiry.institution_id && institutionNames.has(inquiry.institution_id)
-        ? institutionNames.get(inquiry.institution_id)!
-        : "Instituição não identificada",
-    course_name:
-      inquiry.course_id && courseNames.has(inquiry.course_id)
-        ? courseNames.get(inquiry.course_id)!
-        : "Curso não identificado",
-    forwarded_units: forwardedByInquiry.get(inquiry.id) ?? [],
-  })) as CoordinationInquiry[];
+  const inquiries = inquiriesRaw.map((inquiry) => {
+    const unitResponses = responsesByInquiry.get(inquiry.id) ?? [];
+
+    return {
+      ...inquiry,
+      institution_name:
+        inquiry.institution_id && institutionNames.has(inquiry.institution_id)
+          ? institutionNames.get(inquiry.institution_id)!
+          : "Instituição não identificada",
+      course_name:
+        inquiry.course_id && courseNames.has(inquiry.course_id)
+          ? courseNames.get(inquiry.course_id)!
+          : "Curso não identificado",
+      forwarded_units: unitResponses.map((item) => item.unit_name),
+      unit_responses: unitResponses,
+    };
+  }) as CoordinationInquiry[];
 
   return {
     inquiries,
