@@ -1,23 +1,15 @@
+===== app/coordenadoria/unidades/page.tsx =====
 import Link from "next/link";
 import { ActionCard } from "@/components/system/ActionCard";
 import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getMunicipalUnits } from "@/lib/queries/municipal-units";
-import { createMunicipalUnit, releaseMunicipalUnitAccess, toggleMunicipalUnitStatus } from "./actions";
+import { createMunicipalUnit, toggleMunicipalUnitStatus } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type CoordenadoriaUnidadesPageProps = {
-  searchParams?: Promise<{
-    acesso?: string;
-  }>;
-};
-
-export default async function CoordenadoriaUnidadesPage({
-  searchParams,
-}: CoordenadoriaUnidadesPageProps) {
-  const params = await searchParams;
+export default async function CoordenadoriaUnidadesPage() {
   const { units, error } = await getMunicipalUnits();
 
   const activeCount = units.filter((unit) => unit.is_active).length;
@@ -68,12 +60,6 @@ export default async function CoordenadoriaUnidadesPage({
           <SummaryCard key={item.label} {...item} />
         ))}
       </div>
-
-      {params?.acesso === "1" && (
-        <section className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
-          Acesso da unidade municipal liberado com sucesso.
-        </section>
-      )}
 
       {error && (
         <section className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
@@ -204,7 +190,7 @@ export default async function CoordenadoriaUnidadesPage({
                     <th className="px-5 py-4 font-bold">Responsável</th>
                     <th className="px-5 py-4 font-bold">Contato</th>
                     <th className="px-5 py-4 font-bold">Status</th>
-                    <th className="px-5 py-4 font-bold">Acesso</th>
+                    <th className="px-5 py-4 text-right font-bold">Ações</th>
                   </tr>
                 </thead>
 
@@ -250,44 +236,7 @@ export default async function CoordenadoriaUnidadesPage({
                       </td>
 
                       <td className="px-5 py-4">
-                        <div className="grid gap-3">
-                          <form action={releaseMunicipalUnitAccess} className="grid gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                            <input type="hidden" name="unit_id" value={unit.id} />
-
-                            <input
-                              name="full_name"
-                              required
-                              defaultValue={unit.responsible_name ?? ""}
-                              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                              placeholder="Nome do responsável"
-                            />
-
-                            <input
-                              name="email"
-                              type="email"
-                              required
-                              defaultValue={unit.email ?? ""}
-                              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                              placeholder="E-mail de acesso"
-                            />
-
-                            <input
-                              name="password"
-                              type="password"
-                              required
-                              minLength={8}
-                              className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                              placeholder="Senha provisória"
-                            />
-
-                            <button
-                              type="submit"
-                              className="rounded-xl bg-teal-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-teal-800"
-                            >
-                              Liberar acesso
-                            </button>
-                          </form>
-
+                        <div className="flex justify-end">
                           <form action={toggleMunicipalUnitStatus}>
                             <input type="hidden" name="id" value={unit.id} />
                             <input
@@ -299,7 +248,7 @@ export default async function CoordenadoriaUnidadesPage({
                               type="submit"
                               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
                             >
-                              {unit.is_active ? "Inativar unidade" : "Ativar unidade"}
+                              {unit.is_active ? "Inativar" : "Ativar"}
                             </button>
                           </form>
                         </div>
@@ -332,3 +281,70 @@ export default async function CoordenadoriaUnidadesPage({
   );
 }
 
+===== app/coordenadoria/unidades/actions.ts =====
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+
+function normalizeText(value: FormDataEntryValue | null) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
+
+export async function createMunicipalUnit(formData: FormData) {
+  const supabase = await createClient();
+
+  const name = normalizeText(formData.get("name"));
+  const department = normalizeText(formData.get("department"));
+  const responsibleName = normalizeText(formData.get("responsible_name"));
+  const email = normalizeText(formData.get("email"));
+  const phone = normalizeText(formData.get("phone"));
+  const address = normalizeText(formData.get("address"));
+
+  if (!name) {
+    throw new Error("Informe o nome da unidade municipal.");
+  }
+
+  const { error } = await supabase.from("municipal_units").insert({
+    name,
+    department,
+    responsible_name: responsibleName,
+    email,
+    phone,
+    address,
+    is_active: true,
+  });
+
+  if (error) {
+    throw new Error(`Não foi possível cadastrar a unidade: ${error.message}`);
+  }
+
+  revalidatePath("/coordenadoria/unidades");
+}
+
+export async function toggleMunicipalUnitStatus(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = normalizeText(formData.get("id"));
+  const currentValue = formData.get("is_active") === "true";
+
+  if (!id) {
+    throw new Error("Unidade não identificada.");
+  }
+
+  const { error } = await supabase
+    .from("municipal_units")
+    .update({
+      is_active: !currentValue,
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`Não foi possível alterar a unidade: ${error.message}`);
+  }
+
+  revalidatePath("/coordenadoria/unidades");
+}
+
+===== lib/queries/coordination-units.ts =====
