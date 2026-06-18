@@ -24,6 +24,10 @@ export type CoordinationInquiry = {
   notes: string | null;
   status: string;
   created_at: string;
+  coordination_decision: string | null;
+  coordination_approved_students: number | null;
+  coordination_notes: string | null;
+  coordination_decided_at: string | null;
   institution_name: string;
   course_name: string;
   forwarded_units: string[];
@@ -49,6 +53,10 @@ type InquiryRow = {
   notes: string | null;
   status: string;
   created_at: string;
+  coordination_decision: string | null;
+  coordination_approved_students: number | null;
+  coordination_notes: string | null;
+  coordination_decided_at: string | null;
 };
 
 type InstitutionRow = {
@@ -112,7 +120,7 @@ export async function getCoordinationInquiriesData() {
     supabase
       .from("inquiries")
       .select(
-        "id, institution_id, course_id, requested_area, requested_students, required_workload, intended_period, notes, status, created_at",
+        "id, institution_id, course_id, requested_area, requested_students, required_workload, intended_period, notes, status, created_at, coordination_decision, coordination_approved_students, coordination_notes, coordination_decided_at",
       )
       .order("created_at", { ascending: false }),
 
@@ -220,3 +228,5 @@ export async function getCoordinationInquiriesData() {
       null,
   };
 }
+
+
