@@ -125,7 +125,7 @@ export async function forwardInquiryToUnit(formData: FormData) {
   }
 
   revalidatePath("/coordenadoria/sondagens");
-  redirect(`/coordenadoria/sondagens?encaminhada=1&analisar=${inquiryId}#painel-analise`);
+  redirect(`/coordenadoria/sondagens/${inquiryId}/analise?encaminhada=1`);
 }
 
 export async function finalizeCoordinationInquiry(formData: FormData) {
@@ -233,5 +233,5 @@ export async function finalizeCoordinationInquiry(formData: FormData) {
   }
 
   revalidatePath("/coordenadoria/sondagens");
-  redirect(`/coordenadoria/sondagens?concluida=1&analisar=${inquiryId}#painel-analise`);
+  redirect(`/coordenadoria/sondagens/${inquiryId}/analise?concluida=1`);
 }
