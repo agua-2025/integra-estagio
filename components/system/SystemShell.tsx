@@ -9,8 +9,10 @@ import {
   GraduationCap,
   Landmark,
   LayoutDashboard,
+  ListChecks,
   LogIn,
   Menu,
+  PlusCircle,
   School,
   Users,
 } from "lucide-react";
@@ -19,10 +21,11 @@ import { createClient } from "@/lib/supabase/server";
 
 type NavigationItem = {
   label: string;
-  href: string;
+  href?: string;
   Icon: React.ComponentType<{
     className?: string;
   }>;
+  children?: NavigationItem[];
 };
 
 const adminNavigation: NavigationItem[] = [
@@ -42,7 +45,22 @@ const institutionNavigation: NavigationItem[] = [
   { label: "Painel da Instituição", href: "/instituicao", Icon: LayoutDashboard },
   { label: "Dados Institucionais", href: "/instituicao/cadastro", Icon: Building2 },
   { label: "Cursos", href: "/instituicao/cursos", Icon: School },
-  { label: "Sondagens", href: "/instituicao/sondagens", Icon: ClipboardCheck },
+  {
+    label: "Sondagens",
+    Icon: ClipboardCheck,
+    children: [
+      {
+        label: "Acompanhar sondagens",
+        href: "/instituicao/sondagens",
+        Icon: ListChecks,
+      },
+      {
+        label: "Nova sondagem",
+        href: "/instituicao/sondagens/nova",
+        Icon: PlusCircle,
+      },
+    ],
+  },
   { label: "Acordos", href: "/instituicao/acordos", Icon: FileText },
   { label: "Estudantes", href: "/instituicao/estudantes", Icon: GraduationCap },
 ];
@@ -98,6 +116,66 @@ async function getCurrentProfileRole() {
   return data?.role ?? null;
 }
 
+function NavigationItems({
+  navigation,
+  compact = false,
+}: {
+  navigation: NavigationItem[];
+  compact?: boolean;
+}) {
+  return (
+    <>
+      {navigation.map(({ href, label, Icon, children }) => {
+        if (children && children.length > 0) {
+          return (
+            <details key={label} className="group">
+              <summary
+                className={`flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 ${
+                  compact ? "py-2.5" : "py-3"
+                } text-sm font-semibold text-slate-700 transition hover:bg-teal-50 hover:text-teal-800`}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="flex-1">{label}</span>
+                <span className="text-xs text-slate-400 transition group-open:rotate-90">
+                  ›
+                </span>
+              </summary>
+
+              <div className="ml-5 mt-1 grid gap-1 border-l border-slate-200 pl-3">
+                {children.map((child) => (
+                  <Link
+                    key={child.href ?? child.label}
+                    href={child.href ?? "#"}
+                    className={`flex items-center gap-3 rounded-xl px-3 ${
+                      compact ? "py-2" : "py-2.5"
+                    } text-sm font-semibold text-slate-600 transition hover:bg-teal-50 hover:text-teal-800`}
+                  >
+                    <child.Icon className="h-4 w-4" />
+                    {child.label}
+                  </Link>
+                ))}
+              </div>
+            </details>
+          );
+        }
+
+        return (
+          <Link
+            key={href ?? label}
+            href={href ?? "#"}
+            className={`flex items-center gap-3 rounded-xl px-4 ${
+              compact ? "py-2.5" : "py-3"
+            } text-sm font-semibold text-slate-700 transition hover:bg-teal-50 hover:text-teal-800`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 type SystemShellProps = {
   areaLabel: string;
   title: string;
@@ -137,16 +215,7 @@ export async function SystemShell({
 
             <div className="absolute right-0 mt-3 max-h-[75vh] w-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
               <nav className="grid gap-1">
-                {navigation.map(({ href, label, Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-teal-50 hover:text-teal-800"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                ))}
+                <NavigationItems navigation={navigation} compact />
 
                 <div className="mt-2 border-t border-slate-200 pt-2">
                   <LogoutButton />
@@ -181,16 +250,7 @@ export async function SystemShell({
             </Link>
 
             <nav className="mt-6 grid gap-1">
-              {navigation.map(({ href, label, Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-teal-50 hover:text-teal-800"
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </Link>
-              ))}
+              <NavigationItems navigation={navigation} />
             </nav>
 
             <div className="mt-auto space-y-4 pt-6">

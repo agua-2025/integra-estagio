@@ -31,6 +31,10 @@ export type InstitutionInquiry = {
   notes: string | null;
   status: string;
   created_at: string;
+  coordination_decision: string | null;
+  coordination_approved_students: number | null;
+  coordination_notes: string | null;
+  coordination_decided_at: string | null;
   course_name: string;
 };
 
@@ -95,7 +99,7 @@ export async function getInstitutionInquiriesData() {
     supabase
       .from("inquiries")
       .select(
-        "id, course_id, requested_area, requested_students, required_workload, intended_period, notes, status, created_at",
+        "id, course_id, requested_area, requested_students, required_workload, intended_period, notes, status, created_at, coordination_decision, coordination_approved_students, coordination_notes, coordination_decided_at",
       )
       .eq("institution_id", profile.institution_id)
       .order("created_at", { ascending: false }),

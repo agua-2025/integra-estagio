@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getInstitutionInquiriesData } from "@/lib/queries/institution-inquiries";
-import { createInstitutionInquiry } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,10 +16,10 @@ function statusLabel(status: string) {
     recebida: "Recebida",
     em_analise: "Em análise",
     encaminhada: "Encaminhada",
-    encaminhada_unidade: "Encaminhada à unidade",
+    encaminhada_unidade: "Encaminhada",
     viavel: "Viável",
-    viavel_parcial: "Viável parcialmente",
-    inviavel: "Sem campo disponível",
+    parcialmente_viavel: "Parcial",
+    inviavel: "Inviável",
     pendente: "Pendente",
   };
 
@@ -33,7 +31,12 @@ function statusClass(status: string) {
     return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
   }
 
-  if (status === "viavel_parcial" || status === "em_analise" || status === "encaminhada" || status === "encaminhada_unidade") {
+  if (
+    status === "parcialmente_viavel" ||
+    status === "em_analise" ||
+    status === "encaminhada" ||
+    status === "encaminhada_unidade"
+  ) {
     return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
   }
 
@@ -44,303 +47,312 @@ function statusClass(status: string) {
   return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
 }
 
+function decisionLabel(decision: string | null) {
+  const labels: Record<string, string> = {
+    viavel: "Viável",
+    parcialmente_viavel: "Parcial",
+    inviavel: "Inviável",
+    precisa_complementacao: "Complementar",
+  };
+
+  if (!decision) {
+    return "Aguardando";
+  }
+
+  return labels[decision] ?? decision;
+}
+
+function decisionClass(decision: string | null) {
+  if (decision === "viavel") {
+    return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
+  }
+
+  if (decision === "parcialmente_viavel") {
+    return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+  }
+
+  if (decision === "inviavel") {
+    return "bg-red-50 text-red-700 ring-1 ring-red-200";
+  }
+
+  if (decision === "precisa_complementacao") {
+    return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
+  }
+
+  return "bg-slate-100 text-slate-600 ring-1 ring-slate-200";
+}
+
 function formatNumber(value: number | null) {
   if (value === null || value === undefined) {
-    return "Não informado";
+    return "-";
   }
 
   return String(value);
+}
+
+function formatWorkload(value: number | null) {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  return `${value}h`;
 }
 
 export default async function InstituicaoSondagensPage({
   searchParams,
 }: InstituicaoSondagensPageProps) {
   const params = await searchParams;
-  const { institution, courses, inquiries, error } =
-    await getInstitutionInquiriesData();
+  const { institution, inquiries, error } = await getInstitutionInquiriesData();
 
   const institutionIsActive = institution?.status === "ativa";
-  const receivedCount = inquiries.filter((item) => item.status === "recebida").length;
+
   const inAnalysisCount = inquiries.filter((item) =>
-    ["em_analise", "encaminhada", "encaminhada_unidade", "aguardando_unidade", "pendente"].includes(item.status),
-  ).length;
-  const viableCount = inquiries.filter((item) =>
-    ["viavel", "viavel_parcial"].includes(item.status),
+    [
+      "recebida",
+      "em_analise",
+      "encaminhada",
+      "encaminhada_unidade",
+      "aguardando_unidade",
+      "pendente",
+    ].includes(item.status),
   ).length;
 
-  const summaries = [
-    {
-      label: "Enviadas",
-      value: String(inquiries.length),
-      description: "Sondagens encaminhadas pela instituição.",
-    },
-    {
-      label: "Recebidas",
-      value: String(receivedCount),
-      description: "Sondagens aguardando análise inicial.",
-    },
-    {
-      label: "Em análise",
-      value: String(inAnalysisCount),
-      description: "Sondagens em análise pela Coordenadoria ou unidade.",
-    },
-    {
-      label: "Viáveis",
-      value: String(viableCount),
-      description: "Sondagens com possibilidade de campo identificada.",
-    },
-  ];
+  const viableCount = inquiries.filter((item) =>
+    ["viavel", "parcialmente_viavel"].includes(item.status),
+  ).length;
+
+  const concludedCount = inquiries.filter((item) =>
+    Boolean(item.coordination_decision),
+  ).length;
 
   return (
     <SystemShell
       areaLabel="Instituição de Ensino"
-      title="Sondagens de Campo"
-      description="Solicite e acompanhe consultas sobre possibilidade de campo de estágio curricular supervisionado."
+      title="Acompanhar sondagens"
+      description="Acompanhe o andamento das sondagens e a conclusão emitida pela Coordenadoria."
     >
-      <div className="mb-6">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/instituicao"
           className="text-sm font-semibold text-teal-700 hover:text-teal-900"
         >
           Voltar para a área da instituição
         </Link>
+
+        <Link
+          href="/instituicao/sondagens/nova"
+          className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
+        >
+          Nova sondagem
+        </Link>
       </div>
 
       {params?.sucesso === "1" && (
-        <section className="mb-6 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
-          Sondagem enviada com sucesso. A Coordenadoria poderá analisar a
-          solicitação e, se necessário, encaminhar às unidades municipais.
+        <section className="mb-5 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+          Sondagem enviada com sucesso.
         </section>
       )}
 
       {error && (
-        <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {error}
         </section>
       )}
 
       {!institutionIsActive && (
-        <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-          A instituição precisa estar ativa para solicitar sondagens. Complete o
-          cadastro institucional e aguarde a validação da Coordenadoria.
+        <section className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+          A instituição precisa estar ativa para solicitar sondagens.
         </section>
       )}
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {summaries.map((item) => (
-          <SummaryCard key={item.label} {...item} />
-        ))}
-      </div>
-
-      <section className="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-            Nova sondagem
-          </h2>
-
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Informe o curso e a necessidade de estágio. O campo específico será
-            analisado posteriormente pela Coordenadoria e pelas unidades
-            municipais, conforme disponibilidade.
-          </p>
-
-          {courses.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-              <h3 className="font-bold text-amber-950">
-                Nenhum curso ativo cadastrado.
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-amber-900">
-                Cadastre ao menos um curso antes de solicitar sondagem.
-              </p>
-              <Link
-                href="/instituicao/cursos"
-                className="mt-4 inline-flex rounded-xl bg-amber-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-950"
-              >
-                Cadastrar curso
-              </Link>
-            </div>
-          ) : (
-            <form action={createInstitutionInquiry} className="mt-5 grid gap-4">
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Curso
-                </span>
-                <select
-                  name="course_id"
-                  required
-                  disabled={!institutionIsActive}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                >
-                  <option value="">Selecione o curso</option>
-                  {courses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Área ou setor de interesse
-                </span>
-                <input
-                  name="requested_area"
-                  required
-                  disabled={!institutionIsActive}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                  placeholder="Ex.: jurídico, administrativo, saúde, assistência social, determinada secretaria ou setor..."
-                />
-              </label>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-slate-700">
-                    Quantidade de estudantes
-                  </span>
-                  <input
-                    name="requested_students"
-                    type="number"
-                    min="1"
-                    required
-                    disabled={!institutionIsActive}
-                    className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                    placeholder="Ex.: 5"
-                  />
-                </label>
-
-                <label className="grid gap-2">
-                  <span className="text-sm font-semibold text-slate-700">
-                    Carga horária exigida
-                  </span>
-                  <input
-                    name="required_workload"
-                    type="number"
-                    min="0"
-                    disabled={!institutionIsActive}
-                    className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                    placeholder="Ex.: 100"
-                  />
-                </label>
-              </div>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Período pretendido
-                </span>
-                <input
-                  name="intended_period"
-                  disabled={!institutionIsActive}
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                  placeholder="Ex.: 2º semestre de 2026"
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">
-                  Observações
-                </span>
-                <textarea
-                  name="notes"
-                  rows={3}
-                  disabled={!institutionIsActive}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                  placeholder="Informe detalhes úteis para a análise da Coordenadoria."
-                />
-              </label>
-
-              <button
-                type="submit"
-                disabled={!institutionIsActive}
-                className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                Enviar sondagem
-              </button>
-            </form>
-          )}
-        </div>
-
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-            <h2 className="text-xl font-bold text-slate-950">
-              Sondagens enviadas
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Acompanhe as consultas encaminhadas pela instituição.
+      <section className="mb-5 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div className="grid gap-3 text-sm sm:grid-cols-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase text-slate-500">
+              Enviadas
+            </p>
+            <p className="text-xl font-black text-slate-950">
+              {inquiries.length}
             </p>
           </div>
 
-          {inquiries.length === 0 ? (
-            <div className="p-5 text-sm font-semibold text-slate-600">
-              Nenhuma sondagem enviada até o momento.
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {inquiries.map((inquiry) => (
-                <article key={inquiry.id} className="p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h3 className="font-bold text-slate-950">
-                        {inquiry.course_name}
-                      </h3>
-                      <p className="mt-1 text-sm font-semibold text-slate-700">
-                        {inquiry.requested_area ?? "Área não informada"}
-                      </p>
-                    </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase text-slate-500">
+              Em análise
+            </p>
+            <p className="text-xl font-black text-sky-800">
+              {inAnalysisCount}
+            </p>
+          </div>
 
-                    <span
-                      className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${statusClass(
-                        inquiry.status,
-                      )}`}
-                    >
-                      {statusLabel(inquiry.status)}
-                    </span>
-                  </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase text-slate-500">
+              Viáveis
+            </p>
+            <p className="text-xl font-black text-teal-800">{viableCount}</p>
+          </div>
 
-                  <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm sm:grid-cols-3">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Estudantes
-                      </p>
-                      <p className="mt-1 font-semibold text-slate-800">
-                        {formatNumber(inquiry.requested_students)}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Carga horária
-                      </p>
-                      <p className="mt-1 font-semibold text-slate-800">
-                        {inquiry.required_workload !== null
-                          ? `${inquiry.required_workload}h`
-                          : "Não informada"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Período
-                      </p>
-                      <p className="mt-1 font-semibold text-slate-800">
-                        {inquiry.intended_period ?? "Não informado"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {inquiry.notes && (
-                    <p className="mt-3 text-sm leading-6 text-slate-600">
-                      {inquiry.notes}
-                    </p>
-                  )}
-                </article>
-              ))}
-            </div>
-          )}
+          <div>
+            <p className="text-[11px] font-bold uppercase text-slate-500">
+              Concluídas
+            </p>
+            <p className="text-xl font-black text-slate-950">
+              {concludedCount}
+            </p>
+          </div>
         </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-wide text-slate-800">
+              Sondagens enviadas
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Lista compacta das consultas encaminhadas pela instituição.
+            </p>
+          </div>
+
+          <Link
+            href="/instituicao/sondagens/nova"
+            className="w-fit rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-bold text-teal-800 transition hover:border-teal-300 hover:bg-teal-100"
+          >
+            Cadastrar nova
+          </Link>
+        </div>
+
+        {inquiries.length === 0 ? (
+          <div className="p-5 text-sm font-semibold text-slate-600">
+            Nenhuma sondagem enviada até o momento.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] border-collapse text-left text-xs">
+              <thead className="bg-slate-100 uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="w-[185px] px-3 py-2 font-black">Curso</th>
+                  <th className="w-[190px] px-3 py-2 font-black">
+                    Área/Setor
+                  </th>
+                  <th className="w-[70px] px-3 py-2 text-center font-black">
+                    Pedido
+                  </th>
+                  <th className="w-[70px] px-3 py-2 text-center font-black">
+                    Carga
+                  </th>
+                  <th className="w-[115px] px-3 py-2 font-black">Status</th>
+                  <th className="w-[130px] px-3 py-2 font-black">
+                    Conclusão
+                  </th>
+                  <th className="w-[220px] px-3 py-2 font-black">
+                    Resultado
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100">
+                {inquiries.map((inquiry) => (
+                  <tr key={inquiry.id} className="align-top hover:bg-slate-50">
+                    <td className="px-3 py-2">
+                      <p className="font-bold leading-5 text-slate-950">
+                        {inquiry.course_name}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {new Date(inquiry.created_at).toLocaleDateString(
+                          "pt-BR",
+                        )}
+                      </p>
+                    </td>
+
+                    <td className="px-3 py-2">
+                      <p className="leading-5 text-slate-700">
+                        {inquiry.requested_area ?? "Não informada"}
+                      </p>
+
+                      {inquiry.notes && (
+                        <details className="mt-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600">
+                          <summary className="cursor-pointer font-bold text-slate-700">
+                            Obs.
+                          </summary>
+                          <p className="mt-1 leading-5">{inquiry.notes}</p>
+                        </details>
+                      )}
+                    </td>
+
+                    <td className="px-3 py-2 text-center font-bold text-slate-800">
+                      {formatNumber(inquiry.requested_students)}
+                    </td>
+
+                    <td className="px-3 py-2 text-center font-bold text-slate-800">
+                      {formatWorkload(inquiry.required_workload)}
+                    </td>
+
+                    <td className="px-3 py-2">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${statusClass(
+                          inquiry.status,
+                        )}`}
+                      >
+                        {statusLabel(inquiry.status)}
+                      </span>
+                    </td>
+
+                    <td className="px-3 py-2">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${decisionClass(
+                          inquiry.coordination_decision,
+                        )}`}
+                      >
+                        {decisionLabel(inquiry.coordination_decision)}
+                      </span>
+
+                      {inquiry.coordination_decided_at && (
+                        <p className="mt-1 text-[11px] font-semibold text-slate-400">
+                          {new Date(
+                            inquiry.coordination_decided_at,
+                          ).toLocaleDateString("pt-BR")}
+                        </p>
+                      )}
+                    </td>
+
+                    <td className="px-3 py-2">
+                      {inquiry.coordination_decision ? (
+                        <div className="grid gap-1">
+                          <p className="font-bold text-slate-900">
+                            {inquiry.coordination_approved_students !== null
+                              ? `${inquiry.coordination_approved_students} autorizado(s)`
+                              : "Quantidade não informada"}
+                          </p>
+
+                          <p className="text-[11px] font-semibold text-slate-500">
+                            Pedido: {formatNumber(inquiry.requested_students)}
+                          </p>
+
+                          {inquiry.coordination_notes && (
+                            <details className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600">
+                              <summary className="cursor-pointer font-bold text-slate-700">
+                                Obs. Coordenadoria
+                              </summary>
+                              <p className="mt-1 leading-5">
+                                {inquiry.coordination_notes}
+                              </p>
+                            </details>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="font-semibold leading-5 text-slate-500">
+                          Em análise.
+                        </p>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     </SystemShell>
   );
 }
-
-
