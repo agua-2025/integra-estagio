@@ -62,7 +62,7 @@ const institutionNavigation: NavigationItem[] = [
     ],
   },
   { label: "Acordos", href: "/instituicao/acordos", Icon: FileText },
-  { label: "Estudantes", href: "/instituicao/estudantes", Icon: GraduationCap },
+  { label: "Estudantes", href: "/instituicao/apresentar-estudante", Icon: GraduationCap },
 ];
 
 const unitNavigation: NavigationItem[] = [
@@ -293,3 +293,4 @@ export async function SystemShell({
     </main>
   );
 }
+
