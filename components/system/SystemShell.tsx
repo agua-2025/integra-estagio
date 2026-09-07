@@ -84,7 +84,7 @@ const unitNavigation: NavigationItem[] = [
   { label: "Sondagens Recebidas", href: "/unidade/sondagens", Icon: ClipboardCheck },
   { label: "Estagiários", href: "/unidade/estagiarios", Icon: GraduationCap },
   { label: "Ocorrências", href: "/unidade/ocorrencias", Icon: FileText },
-  { label: "Relatórios Finais", href: "/unidade/relatorios", Icon: BookOpen },
+  { label: "Relatórios Finais", href: "/unidade/relatorio-final", Icon: BookOpen },
 ];
 
 const studentNavigation: NavigationItem[] = [
