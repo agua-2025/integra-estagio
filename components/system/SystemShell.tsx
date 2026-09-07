@@ -62,7 +62,14 @@ const institutionNavigation: NavigationItem[] = [
     ],
   },
   { label: "Acordos", href: "/instituicao/acordos", Icon: FileText },
-  { label: "Estudantes", href: "/instituicao/apresentar-estudante", Icon: GraduationCap },
+  {
+    label: "Estudantes",
+    Icon: GraduationCap,
+    children: [
+      { label: "Acompanhar estudantes", href: "/instituicao/estudantes", Icon: ListChecks },
+      { label: "Apresentar estudante", href: "/instituicao/apresentar-estudante", Icon: PlusCircle },
+    ],
+  },
 ];
 
 const unitNavigation: NavigationItem[] = [
