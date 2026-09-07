@@ -38,6 +38,13 @@ const adminNavigation: NavigationItem[] = [
   { label: "Acordos de Cooperação", href: "/coordenadoria/acordos-cooperacao", Icon: FileText },
   { label: "Estudantes", href: "/coordenadoria/estudantes", Icon: Users },
   { label: "Autorizações", href: "/coordenadoria/autorizacoes", Icon: GraduationCap },
+  {
+    label: "Acompanhamento",
+    Icon: ClipboardCheck,
+    children: [
+      { label: "Ocorrências", href: "/coordenadoria/ocorrencias", Icon: ListChecks },
+    ],
+  },
   { label: "Relatórios", href: "/coordenadoria/relatorios", Icon: BookOpen },
 ];
 
