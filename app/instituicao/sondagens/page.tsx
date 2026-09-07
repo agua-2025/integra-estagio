@@ -18,8 +18,11 @@ function statusLabel(status: string) {
     encaminhada: "Encaminhada",
     encaminhada_unidade: "Encaminhada",
     viavel: "Viável",
+    viavel_parcial: "Viável parcial",
     parcialmente_viavel: "Parcial",
+    sem_disponibilidade: "Sem disponibilidade",
     inviavel: "Inviável",
+    complementacao_solicitada: "Complementação solicitada",
     pendente: "Pendente",
   };
 
@@ -32,9 +35,9 @@ function statusClass(status: string) {
   }
 
   if (
-    status === "parcialmente_viavel" ||
+    status === "parcialmente_viavel" || status === "viavel_parcial" ||
     status === "em_analise" ||
-    status === "encaminhada" ||
+    status === "encaminhada" || status === "complementacao_solicitada" ||
     status === "encaminhada_unidade"
   ) {
     return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
@@ -50,8 +53,11 @@ function statusClass(status: string) {
 function decisionLabel(decision: string | null) {
   const labels: Record<string, string> = {
     viavel: "Viável",
+    viavel_parcial: "Viável parcial",
     parcialmente_viavel: "Parcial",
+    sem_disponibilidade: "Sem disponibilidade",
     inviavel: "Inviável",
+    complementacao_solicitada: "Complementação solicitada",
     precisa_complementacao: "Complementar",
   };
 
@@ -118,7 +124,7 @@ export default async function InstituicaoSondagensPage({
   ).length;
 
   const viableCount = inquiries.filter((item) =>
-    ["viavel", "parcialmente_viavel"].includes(item.status),
+    ["viavel", "parcialmente_viavel", "viavel_parcial"].includes(item.status),
   ).length;
 
   const concludedCount = inquiries.filter((item) =>
@@ -356,3 +362,4 @@ export default async function InstituicaoSondagensPage({
     </SystemShell>
   );
 }
+
