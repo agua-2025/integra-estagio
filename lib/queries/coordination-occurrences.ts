@@ -1,5 +1,26 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type CoordinationOccurrenceFilters = {
+  status?: string;
+  type?: string;
+  institutionId?: string;
+  courseId?: string;
+  unitId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export type CoordinationOccurrenceFilterOption = {
+  id: string;
+  name: string;
+};
+
+export type CoordinationOccurrenceCourseOption = {
+  id: string;
+  name: string;
+  institution_id: string | null;
+};
+
 export type CoordinationOccurrenceRow = {
   id: string;
   student_name: string;
@@ -15,7 +36,32 @@ export type CoordinationOccurrenceRow = {
   resolved_at: string | null;
 };
 
-export async function getCoordinationOccurrencesData() {
+const allowedStatuses = [
+  "pendente",
+  "em_acompanhamento",
+  "resolvida",
+  "critica",
+  "cancelada",
+];
+
+const allowedTypes = [
+  "falta",
+  "atraso",
+  "ajuste_horario",
+  "alteracao_supervisor",
+  "dificuldade_acompanhamento",
+  "encerramento_antecipado",
+  "outra",
+];
+
+function cleanFilter(value?: string) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : undefined;
+}
+
+export async function getCoordinationOccurrencesData(
+  filters: CoordinationOccurrenceFilters = {},
+) {
   const supabase = await createClient();
 
   const {
@@ -26,6 +72,9 @@ export async function getCoordinationOccurrencesData() {
   if (userError || !user) {
     return {
       occurrences: [] as CoordinationOccurrenceRow[],
+      institutions: [] as CoordinationOccurrenceFilterOption[],
+      courses: [] as CoordinationOccurrenceCourseOption[],
+      units: [] as CoordinationOccurrenceFilterOption[],
       error: "Usuário não autenticado.",
     };
   }
@@ -39,6 +88,9 @@ export async function getCoordinationOccurrencesData() {
   if (profileError || !profile) {
     return {
       occurrences: [] as CoordinationOccurrenceRow[],
+      institutions: [] as CoordinationOccurrenceFilterOption[],
+      courses: [] as CoordinationOccurrenceCourseOption[],
+      units: [] as CoordinationOccurrenceFilterOption[],
       error: profileError?.message ?? "Perfil não encontrado.",
     };
   }
@@ -46,20 +98,99 @@ export async function getCoordinationOccurrencesData() {
   if (!profile.is_active || !["admin", "coordenadoria"].includes(profile.role)) {
     return {
       occurrences: [] as CoordinationOccurrenceRow[],
+      institutions: [] as CoordinationOccurrenceFilterOption[],
+      courses: [] as CoordinationOccurrenceCourseOption[],
+      units: [] as CoordinationOccurrenceFilterOption[],
       error: "Acesso permitido apenas à Coordenadoria.",
     };
   }
 
-  const { data: occurrencesData, error: occurrencesError } = await supabase
+  const status = cleanFilter(filters.status);
+  const type = cleanFilter(filters.type);
+  const institutionId = cleanFilter(filters.institutionId);
+  const courseId = cleanFilter(filters.courseId);
+  const unitId = cleanFilter(filters.unitId);
+  const dateFrom = cleanFilter(filters.dateFrom);
+  const dateTo = cleanFilter(filters.dateTo);
+
+  const [institutionsResult, coursesResult, unitsResult] = await Promise.all([
+    supabase
+      .from("institutions")
+      .select("id, name")
+      .order("name", { ascending: true }),
+
+    supabase
+      .from("courses")
+      .select("id, name, institution_id")
+      .order("name", { ascending: true }),
+
+    supabase
+      .from("municipal_units")
+      .select("id, name")
+      .order("name", { ascending: true }),
+  ]);
+
+  const optionsError =
+    institutionsResult.error?.message ??
+    coursesResult.error?.message ??
+    unitsResult.error?.message ??
+    null;
+
+  if (optionsError) {
+    return {
+      occurrences: [] as CoordinationOccurrenceRow[],
+      institutions: [] as CoordinationOccurrenceFilterOption[],
+      courses: [] as CoordinationOccurrenceCourseOption[],
+      units: [] as CoordinationOccurrenceFilterOption[],
+      error: optionsError,
+    };
+  }
+
+  let occurrenceQuery = supabase
     .from("internship_occurrences")
     .select(
       "id, student_id, institution_id, course_id, municipal_unit_id, occurrence_type, occurrence_date, description, status, resolution_notes, created_at, resolved_at",
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (status && allowedStatuses.includes(status)) {
+    occurrenceQuery = occurrenceQuery.eq("status", status);
+  }
+
+  if (type && allowedTypes.includes(type)) {
+    occurrenceQuery = occurrenceQuery.eq("occurrence_type", type);
+  }
+
+  if (institutionId) {
+    occurrenceQuery = occurrenceQuery.eq("institution_id", institutionId);
+  }
+
+  if (courseId) {
+    occurrenceQuery = occurrenceQuery.eq("course_id", courseId);
+  }
+
+  if (unitId) {
+    occurrenceQuery = occurrenceQuery.eq("municipal_unit_id", unitId);
+  }
+
+  if (dateFrom) {
+    occurrenceQuery = occurrenceQuery.gte("occurrence_date", dateFrom);
+  }
+
+  if (dateTo) {
+    occurrenceQuery = occurrenceQuery.lte("occurrence_date", dateTo);
+  }
+
+  const { data: occurrencesData, error: occurrencesError } =
+    await occurrenceQuery;
 
   if (occurrencesError) {
     return {
       occurrences: [] as CoordinationOccurrenceRow[],
+      institutions: (institutionsResult.data ?? []) as CoordinationOccurrenceFilterOption[],
+      courses: (coursesResult.data ?? []) as CoordinationOccurrenceCourseOption[],
+      units: (unitsResult.data ?? []) as CoordinationOccurrenceFilterOption[],
       error: occurrencesError.message,
     };
   }
@@ -70,54 +201,22 @@ export async function getCoordinationOccurrencesData() {
     new Set(occurrences.map((item) => item.student_id).filter(Boolean)),
   ) as string[];
 
-  const institutionIds = Array.from(
-    new Set(occurrences.map((item) => item.institution_id).filter(Boolean)),
-  ) as string[];
+  const { data: studentsData, error: studentsError } =
+    studentIds.length > 0
+      ? await supabase.from("students").select("id, full_name").in("id", studentIds)
+      : { data: [], error: null };
 
-  const courseIds = Array.from(
-    new Set(occurrences.map((item) => item.course_id).filter(Boolean)),
-  ) as string[];
-
-  const unitIds = Array.from(
-    new Set(occurrences.map((item) => item.municipal_unit_id).filter(Boolean)),
-  ) as string[];
-
-  const [studentsResult, institutionsResult, coursesResult, unitsResult] =
-    await Promise.all([
-      studentIds.length > 0
-        ? supabase.from("students").select("id, full_name").in("id", studentIds)
-        : { data: [], error: null },
-
-      institutionIds.length > 0
-        ? supabase.from("institutions").select("id, name").in("id", institutionIds)
-        : { data: [], error: null },
-
-      courseIds.length > 0
-        ? supabase.from("courses").select("id, name").in("id", courseIds)
-        : { data: [], error: null },
-
-      unitIds.length > 0
-        ? supabase.from("municipal_units").select("id, name").in("id", unitIds)
-        : { data: [], error: null },
-    ]);
-
-  const error =
-    studentsResult.error?.message ??
-    institutionsResult.error?.message ??
-    coursesResult.error?.message ??
-    unitsResult.error?.message ??
-    null;
-
-  if (error) {
+  if (studentsError) {
     return {
       occurrences: [] as CoordinationOccurrenceRow[],
-      error,
+      institutions: (institutionsResult.data ?? []) as CoordinationOccurrenceFilterOption[],
+      courses: (coursesResult.data ?? []) as CoordinationOccurrenceCourseOption[],
+      units: (unitsResult.data ?? []) as CoordinationOccurrenceFilterOption[],
+      error: studentsError.message,
     };
   }
 
-  const students = new Map(
-    (studentsResult.data ?? []).map((item) => [item.id, item]),
-  );
+  const students = new Map((studentsData ?? []).map((item) => [item.id, item]));
 
   const institutions = new Map(
     (institutionsResult.data ?? []).map((item) => [item.id, item]),
@@ -127,9 +226,7 @@ export async function getCoordinationOccurrencesData() {
     (coursesResult.data ?? []).map((item) => [item.id, item]),
   );
 
-  const units = new Map(
-    (unitsResult.data ?? []).map((item) => [item.id, item]),
-  );
+  const units = new Map((unitsResult.data ?? []).map((item) => [item.id, item]));
 
   const occurrenceRows = occurrences.map((item) => ({
     id: item.id,
@@ -151,6 +248,9 @@ export async function getCoordinationOccurrencesData() {
 
   return {
     occurrences: occurrenceRows,
+    institutions: (institutionsResult.data ?? []) as CoordinationOccurrenceFilterOption[],
+    courses: (coursesResult.data ?? []) as CoordinationOccurrenceCourseOption[],
+    units: (unitsResult.data ?? []) as CoordinationOccurrenceFilterOption[],
     error: null,
   };
 }
