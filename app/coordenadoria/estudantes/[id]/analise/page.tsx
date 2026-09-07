@@ -24,7 +24,7 @@ function statusLabel(status: string) {
     em_analise: "Em análise",
     pendente_correcao: "Pendente de correção",
     documentos_validados: "Documentos validados",
-    apto_para_autorizacao: "Apto para autorização",
+    apto_para_autorizacao: "Pronto para emissão da autorização",
     autorizado: "Autorizado",
     indeferido: "Indeferido",
     cancelado: "Cancelado",
@@ -326,7 +326,7 @@ export default async function AnaliseEstudantePage({
                 <option value="em_analise">Em análise</option>
                 <option value="pendente_correcao">Pendente de correção</option>
                 <option value="documentos_validados">Documentos validados</option>
-                <option value="apto_para_autorizacao">Apto para autorização</option>
+                <option value="apto_para_autorizacao">Pronto para emissão da autorização</option>
                 <option value="indeferido">Indeferido</option>
                 <option value="cancelado">Cancelado</option>
               </select>
@@ -356,7 +356,7 @@ export default async function AnaliseEstudantePage({
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
             <p className="font-black">Atenção</p>
             <p className="mt-1">
-              A marcação como apto para autorização ainda não cria a autorização
+              A marcação como pronto para emissão da autorização ainda não cria a autorização
               de início automaticamente. Essa será a próxima etapa do fluxo.
             </p>
           </div>
