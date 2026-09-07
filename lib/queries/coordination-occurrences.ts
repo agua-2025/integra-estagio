@@ -38,10 +38,7 @@ export type CoordinationOccurrenceRow = {
 
 const allowedStatuses = [
   "pendente",
-  "em_acompanhamento",
   "resolvida",
-  "critica",
-  "cancelada",
 ];
 
 const allowedTypes = [

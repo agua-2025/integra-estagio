@@ -184,10 +184,7 @@ export default async function CoordenadoriaOcorrenciasPage({
             >
               <option value="">Todos</option>
               <option value="pendente">Pendente</option>
-              <option value="em_acompanhamento">Em acompanhamento</option>
               <option value="resolvida">Resolvida</option>
-              <option value="critica">Crítica</option>
-              <option value="cancelada">Cancelada</option>
             </select>
           </label>
 
