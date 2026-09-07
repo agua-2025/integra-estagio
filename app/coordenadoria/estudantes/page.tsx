@@ -1,100 +1,80 @@
 import Link from "next/link";
-import { ActionCard } from "@/components/system/ActionCard";
-import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
+import { getCoordinationStudentPresentationsData } from "@/lib/queries/coordination-student-presentations";
 
-const summaries = [
-  {
-    label: "Recebidos",
-    value: "0",
-    description: "Estudantes apresentados por instituições.",
-  },
-  {
-    label: "Pendentes",
-    value: "0",
-    description: "Apresentações aguardando análise documental.",
-  },
-  {
-    label: "Correção",
-    value: "0",
-    description: "Processos devolvidos para complementação.",
-  },
-  {
-    label: "Aptos",
-    value: "0",
-    description: "Estudantes prontos para autorização de início.",
-  },
-];
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const students = [
-  {
-    name: "Estudante Exemplo 01",
-    institution: "Faculdade ou Universidade Exemplo",
-    course: "Direito",
-    status: "Aguardando análise",
-    agreement: "Em conferência",
-    field: "Jurídico / Administração",
-    documents: "4 documentos",
-    receivedAt: "Hoje",
-  },
-  {
-    name: "Estudante Exemplo 02",
-    institution: "Instituição Cooperada Exemplo",
-    course: "Serviço Social",
-    status: "Correção solicitada",
-    agreement: "Ativo",
-    field: "Assistência Social",
-    documents: "1 pendência",
-    receivedAt: "Ontem",
-  },
-  {
-    name: "Estudante Exemplo 03",
-    institution: "Centro de Ensino Técnico Exemplo",
-    course: "Técnico em Administração",
-    status: "Apto para autorização",
-    agreement: "Ativo",
-    field: "Administração e Gestão Pública",
-    documents: "Completo",
-    receivedAt: "25/05/2026",
-  },
-  {
-    name: "Estudante Exemplo 04",
-    institution: "Faculdade ou Universidade Exemplo",
-    course: "Administração",
-    status: "Aguardando análise",
-    agreement: "Ativo",
-    field: "Gestão Pública",
-    documents: "5 documentos",
-    receivedAt: "24/05/2026",
-  },
-];
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    rascunho: "Rascunho",
+    apresentado: "Apresentado",
+    em_analise: "Em análise",
+    pendente_correcao: "Pendente de correção",
+    documentos_validados: "Documentos validados",
+    apto_para_autorizacao: "Apto para autorização",
+    autorizado: "Autorizado",
+    indeferido: "Indeferido",
+    cancelado: "Cancelado",
+  };
 
-const filters = [
-  "Todos",
-  "Aguardando análise",
-  "Correção solicitada",
-  "Aptos",
-  "Autorizados",
-];
+  return labels[status] ?? status;
+}
 
 function statusClass(status: string) {
-  if (status === "Correção solicitada") {
+  if (["autorizado", "apto_para_autorizacao", "documentos_validados"].includes(status)) {
+    return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
+  }
+
+  if (["pendente_correcao", "em_analise", "apresentado"].includes(status)) {
     return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
   }
 
-  if (status === "Apto para autorização") {
-    return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
+  if (["indeferido", "cancelado"].includes(status)) {
+    return "bg-red-50 text-red-700 ring-1 ring-red-200";
   }
 
   return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
 }
 
-export default function CoordenadoriaEstudantesPage() {
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatNumber(value: number | null) {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  return new Intl.NumberFormat("pt-BR").format(value);
+}
+
+export default async function CoordenadoriaEstudantesPage() {
+  const { presentations, error } =
+    await getCoordinationStudentPresentationsData();
+
+  const recebidos = presentations.length;
+  const pendentes = presentations.filter((item) =>
+    ["apresentado", "em_analise"].includes(item.status),
+  ).length;
+  const correcao = presentations.filter(
+    (item) => item.status === "pendente_correcao",
+  ).length;
+  const aptos = presentations.filter((item) =>
+    ["documentos_validados", "apto_para_autorizacao", "autorizado"].includes(
+      item.status,
+    ),
+  ).length;
+
   return (
     <SystemShell
       areaLabel="Coordenadoria"
-      title="Estudantes Apresentados"
-      description="Analise estudantes encaminhados pelas instituições, confira documentos individuais e prepare a autorização de início do estágio."
+      title="Estudantes apresentados"
+      description="Analise estudantes encaminhados pelas instituições e acompanhe a situação de cada apresentação."
     >
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
@@ -104,127 +84,142 @@ export default function CoordenadoriaEstudantesPage() {
           Voltar para a Coordenadoria
         </Link>
 
-        <button
-          type="button"
-          className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
+        <Link
+          href="/coordenadoria/sondagens"
+          className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
         >
-          Filtrar pendentes
-        </button>
+          Ver sondagens
+        </Link>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {summaries.map((item) => (
-          <SummaryCard key={item.label} {...item} />
-        ))}
-      </div>
+      {error && (
+        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {error}
+        </section>
+      )}
 
-      <section className="mt-8">
-        <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-              Apresentações recebidas
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Listagem compacta para análise documental, conferência do acordo,
-              campo pretendido e autorização de início.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {filters.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
+      <div className="mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Recebidos
+          </p>
+          <p className="text-xl font-black text-slate-950">{recebidos}</p>
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Pendentes
+          </p>
+          <p className="text-xl font-black text-amber-700">{pendentes}</p>
+        </div>
+
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Correção
+          </p>
+          <p className="text-xl font-black text-slate-950">{correcao}</p>
+        </div>
+
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Aptos
+          </p>
+          <p className="text-xl font-black text-teal-700">{aptos}</p>
+        </div>
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
+            Apresentações recebidas
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Listagem real dos estudantes apresentados pelas instituições.
+          </p>
+        </div>
+
+        {presentations.length === 0 ? (
+          <div className="p-5 text-sm text-slate-600">
+            Nenhum estudante apresentado até o momento.
+          </div>
+        ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <table className="w-full min-w-[980px] border-collapse text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-5 py-4 font-bold">Estudante</th>
-                  <th className="px-5 py-4 font-bold">Instituição</th>
-                  <th className="px-5 py-4 font-bold">Curso</th>
-                  <th className="px-5 py-4 font-bold">Campo</th>
-                  <th className="px-5 py-4 font-bold">Acordo</th>
-                  <th className="px-5 py-4 font-bold">Documentos</th>
-                  <th className="px-5 py-4 font-bold">Status</th>
-                  <th className="px-5 py-4 font-bold">Recebido</th>
-                  <th className="px-5 py-4 text-right font-bold">Ações</th>
+                  <th className="px-3 py-2 font-black">Estudante</th>
+                  <th className="px-3 py-2 font-black">Instituição</th>
+                  <th className="px-3 py-2 font-black">Curso</th>
+                  <th className="px-3 py-2 font-black">Unidade</th>
+                  <th className="px-3 py-2 font-black">Período</th>
+                  <th className="px-3 py-2 font-black">Carga</th>
+                  <th className="px-3 py-2 font-black">Status</th>
+                  <th className="px-3 py-2 font-black">Recebido</th>
+                  <th className="px-3 py-2 text-right font-black">Ação</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {students.map((student) => (
-                  <tr
-                    key={`${student.name}-${student.course}`}
-                    className="transition hover:bg-slate-50"
-                  >
-                    <td className="px-5 py-4">
-                      <p className="font-bold text-slate-950">{student.name}</p>
+                {presentations.map((presentation) => (
+                  <tr key={presentation.id} className="hover:bg-slate-50">
+                    <td className="px-3 py-2 align-top">
+                      <p className="font-black text-slate-950">
+                        {presentation.student_name}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        {presentation.student_email ?? "E-mail não informado"}
+                      </p>
+                      {presentation.student_cpf && (
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          CPF: {presentation.student_cpf}
+                        </p>
+                      )}
                     </td>
 
-                    <td className="px-5 py-4 text-slate-700">
-                      {student.institution}
+                    <td className="px-3 py-2 align-top font-semibold text-slate-700">
+                      {presentation.institution_name}
                     </td>
 
-                    <td className="px-5 py-4 font-semibold text-slate-800">
-                      {student.course}
+                    <td className="px-3 py-2 align-top font-semibold text-slate-800">
+                      {presentation.course_name}
                     </td>
 
-                    <td className="px-5 py-4 text-slate-700">
-                      {student.field}
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {presentation.municipal_unit_name}
                     </td>
 
-                    <td className="px-5 py-4 text-slate-700">
-                      {student.agreement}
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      <p>{presentation.intended_period ?? "-"}</p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        {presentation.intended_schedule ?? "-"}
+                      </p>
                     </td>
 
-                    <td className="px-5 py-4 text-slate-700">
-                      {student.documents}
+                    <td className="px-3 py-2 align-top font-bold text-slate-800">
+                      {formatNumber(presentation.required_workload)}h
                     </td>
 
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-2 align-top">
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${statusClass(
-                          student.status,
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${statusClass(
+                          presentation.status,
                         )}`}
                       >
-                        {student.status}
+                        {statusLabel(presentation.status)}
                       </span>
                     </td>
 
-                    <td className="px-5 py-4 text-slate-700">
-                      {student.receivedAt}
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {formatDate(presentation.created_at)}
                     </td>
 
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-3 py-2 align-top">
+                      <div className="flex justify-end">
                         <button
                           type="button"
                           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
                         >
-                          Ver
-                        </button>
-
-                        <button
-                          type="button"
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-amber-300 hover:text-amber-800"
-                        >
-                          Correção
-                        </button>
-
-                        <button
-                          type="button"
-                          className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-teal-800"
-                        >
-                          Autorizar
+                          Analisar
                         </button>
                       </div>
                     </td>
@@ -233,28 +228,12 @@ export default function CoordenadoriaEstudantesPage() {
               </tbody>
             </table>
           </div>
+        )}
 
-          <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs font-medium text-slate-500">
-            Na versão com banco de dados, esta listagem terá busca, filtros por
-            instituição, curso, status, período e paginação.
-          </div>
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
+          Nesta etapa, a listagem já utiliza o banco de dados. A análise
+          documental e autorização de início serão implementadas em etapa própria.
         </div>
-      </section>
-
-      <section className="mt-8 grid gap-5 lg:grid-cols-3">
-        <ActionCard
-          title="Conferência obrigatória"
-          description="A apresentação do estudante não autoriza início automático. A Coordenadoria deverá validar documentos e vínculo com acordo ativo."
-          status="Regra"
-        />
-        <ActionCard
-          title="Correção documental"
-          description="Quando houver pendência, o processo poderá ser devolvido para complementação pela instituição de ensino."
-        />
-        <ActionCard
-          title="Autorização de início"
-          description="Somente após validação completa a Coordenadoria poderá liberar o estudante para iniciar as atividades na unidade."
-        />
       </section>
     </SystemShell>
   );
