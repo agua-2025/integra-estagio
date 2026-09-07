@@ -1,32 +1,62 @@
 import { createClient } from "@/lib/supabase/server";
 
-export type UnitFinalReportInternOption = {
+export type UnitFinalReportFilters = {
+  status?: string;
+  courseId?: string;
+  student?: string;
+};
+
+export type UnitFinalReportCourseOption = {
+  id: string;
+  name: string;
+};
+
+export type UnitFinalReportInternRow = {
   id: string;
   student_name: string;
+  student_email: string | null;
   institution_name: string;
   course_name: string;
   supervisor_name: string;
   start_date: string;
   end_date: string | null;
   schedule: string | null;
+  internship_status: string;
+  has_report: boolean;
+  report_id: string | null;
+  closing_status: string | null;
+  completed_workload: number | null;
+  report_created_at: string | null;
 };
 
-export type UnitFinalReportRow = {
+export type UnitFinalReportDetail = {
   id: string;
-  internship_id: string;
   student_name: string;
+  student_email: string | null;
   institution_name: string;
   course_name: string;
   supervisor_name: string;
-  performed_period: string;
-  completed_workload: number | null;
-  activities_summary: string;
-  supervisor_notes: string | null;
-  closing_status: string;
-  created_at: string;
+  start_date: string;
+  end_date: string | null;
+  schedule: string | null;
+  status: string;
+  report: {
+    id: string;
+    performed_period: string;
+    completed_workload: number | null;
+    activities_summary: string;
+    supervisor_notes: string | null;
+    closing_status: string;
+    created_at: string;
+  } | null;
 };
 
-export async function getUnitFinalReportsData() {
+function cleanFilter(value?: string) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : undefined;
+}
+
+async function getUnitProfile() {
   const supabase = await createClient();
 
   const {
@@ -36,9 +66,9 @@ export async function getUnitFinalReportsData() {
 
   if (userError || !user) {
     return {
-      unit: null,
-      internOptions: [] as UnitFinalReportInternOption[],
-      reports: [] as UnitFinalReportRow[],
+      supabase,
+      user: null,
+      profile: null,
       error: "Usuário não autenticado.",
     };
   }
@@ -51,21 +81,47 @@ export async function getUnitFinalReportsData() {
 
   if (profileError || !profile) {
     return {
-      unit: null,
-      internOptions: [] as UnitFinalReportInternOption[],
-      reports: [] as UnitFinalReportRow[],
+      supabase,
+      user,
+      profile: null,
       error: profileError?.message ?? "Perfil não encontrado.",
     };
   }
 
   if (!profile.is_active || profile.role !== "unidade" || !profile.municipal_unit_id) {
     return {
-      unit: null,
-      internOptions: [] as UnitFinalReportInternOption[],
-      reports: [] as UnitFinalReportRow[],
+      supabase,
+      user,
+      profile,
       error: "Acesso permitido apenas à unidade municipal ativa.",
     };
   }
+
+  return {
+    supabase,
+    user,
+    profile,
+    error: null,
+  };
+}
+
+export async function getUnitFinalReportsData(
+  filters: UnitFinalReportFilters = {},
+) {
+  const { supabase, profile, error: profileError } = await getUnitProfile();
+
+  if (profileError || !profile?.municipal_unit_id) {
+    return {
+      unit: null,
+      rows: [] as UnitFinalReportInternRow[],
+      courses: [] as UnitFinalReportCourseOption[],
+      error: profileError,
+    };
+  }
+
+  const status = cleanFilter(filters.status);
+  const courseId = cleanFilter(filters.courseId);
+  const student = cleanFilter(filters.student)?.toLowerCase();
 
   const { data: unit, error: unitError } = await supabase
     .from("municipal_units")
@@ -76,22 +132,28 @@ export async function getUnitFinalReportsData() {
   if (unitError || !unit) {
     return {
       unit: null,
-      internOptions: [] as UnitFinalReportInternOption[],
-      reports: [] as UnitFinalReportRow[],
+      rows: [] as UnitFinalReportInternRow[],
+      courses: [] as UnitFinalReportCourseOption[],
       error: unitError?.message ?? "Unidade municipal não encontrada.",
     };
   }
 
-  const { data: internshipsData, error: internshipsError } = await supabase
+  let internshipsQuery = supabase
     .from("internships")
-    .select("id, student_id, institution_id, course_id, supervisor_name, start_date, end_date, schedule, status")
+    .select("id, student_id, institution_id, course_id, supervisor_name, start_date, end_date, schedule, status, created_at")
     .eq("municipal_unit_id", profile.municipal_unit_id)
-    .in("status", ["aguardando_inicio", "em_andamento", "suspenso", "encerrado"])
-    .order("start_date", { ascending: false });
+    .order("start_date", { ascending: false })
+    .limit(200);
+
+  if (courseId) {
+    internshipsQuery = internshipsQuery.eq("course_id", courseId);
+  }
+
+  const { data: internshipsData, error: internshipsError } = await internshipsQuery;
 
   const { data: reportsData, error: reportsError } = await supabase
     .from("final_reports")
-    .select("id, internship_id, student_id, municipal_unit_id, supervisor_name, performed_period, completed_workload, activities_summary, supervisor_notes, closing_status, created_at")
+    .select("id, internship_id, closing_status, completed_workload, created_at")
     .eq("municipal_unit_id", profile.municipal_unit_id)
     .order("created_at", { ascending: false });
 
@@ -100,8 +162,8 @@ export async function getUnitFinalReportsData() {
   if (baseError) {
     return {
       unit,
-      internOptions: [] as UnitFinalReportInternOption[],
-      reports: [] as UnitFinalReportRow[],
+      rows: [] as UnitFinalReportInternRow[],
+      courses: [] as UnitFinalReportCourseOption[],
       error: baseError,
     };
   }
@@ -109,13 +171,8 @@ export async function getUnitFinalReportsData() {
   const internships = internshipsData ?? [];
   const reports = reportsData ?? [];
 
-  const reportedInternshipIds = new Set(reports.map((item) => item.internship_id));
-
   const studentIds = Array.from(
-    new Set([
-      ...internships.map((item) => item.student_id),
-      ...reports.map((item) => item.student_id),
-    ].filter(Boolean)),
+    new Set(internships.map((item) => item.student_id).filter(Boolean)),
   ) as string[];
 
   const institutionIds = Array.from(
@@ -128,7 +185,7 @@ export async function getUnitFinalReportsData() {
 
   const [studentsResult, institutionsResult, coursesResult] = await Promise.all([
     studentIds.length > 0
-      ? supabase.from("students").select("id, full_name").in("id", studentIds)
+      ? supabase.from("students").select("id, full_name, email").in("id", studentIds)
       : { data: [], error: null },
 
     institutionIds.length > 0
@@ -149,8 +206,8 @@ export async function getUnitFinalReportsData() {
   if (error) {
     return {
       unit,
-      internOptions: [] as UnitFinalReportInternOption[],
-      reports: [] as UnitFinalReportRow[],
+      rows: [] as UnitFinalReportInternRow[],
+      courses: [] as UnitFinalReportCourseOption[],
       error,
     };
   }
@@ -158,49 +215,151 @@ export async function getUnitFinalReportsData() {
   const students = new Map((studentsResult.data ?? []).map((item) => [item.id, item]));
   const institutions = new Map((institutionsResult.data ?? []).map((item) => [item.id, item]));
   const courses = new Map((coursesResult.data ?? []).map((item) => [item.id, item]));
-  const internshipsMap = new Map(internships.map((item) => [item.id, item]));
+  const reportsByInternship = new Map(reports.map((item) => [item.internship_id, item]));
 
-  const internOptions = internships
-    .filter((item) => !reportedInternshipIds.has(item.id))
-    .filter((item) => ["em_andamento", "suspenso"].includes(item.status))
-    .map((item) => ({
+  let rows = internships.map((item) => {
+    const report = reportsByInternship.get(item.id);
+    const studentInfo = students.get(item.student_id);
+
+    return {
       id: item.id,
-      student_name: students.get(item.student_id)?.full_name ?? "Estudante não identificado",
-      institution_name: institutions.get(item.institution_id)?.name ?? "Instituição não identificada",
+      student_name: studentInfo?.full_name ?? "Estudante não identificado",
+      student_email: studentInfo?.email ?? null,
+      institution_name:
+        institutions.get(item.institution_id)?.name ?? "Instituição não identificada",
       course_name: courses.get(item.course_id)?.name ?? "Curso não identificado",
       supervisor_name: item.supervisor_name,
       start_date: item.start_date,
       end_date: item.end_date,
       schedule: item.schedule,
-    })) as UnitFinalReportInternOption[];
-
-  const reportRows = reports.map((item) => {
-    const internship = internshipsMap.get(item.internship_id);
-
-    return {
-      id: item.id,
-      internship_id: item.internship_id,
-      student_name: students.get(item.student_id)?.full_name ?? "Estudante não identificado",
-      institution_name: internship
-        ? institutions.get(internship.institution_id)?.name ?? "Instituição não identificada"
-        : "Instituição não identificada",
-      course_name: internship
-        ? courses.get(internship.course_id)?.name ?? "Curso não identificado"
-        : "Curso não identificado",
-      supervisor_name: item.supervisor_name,
-      performed_period: item.performed_period,
-      completed_workload: item.completed_workload,
-      activities_summary: item.activities_summary,
-      supervisor_notes: item.supervisor_notes,
-      closing_status: item.closing_status,
-      created_at: item.created_at,
+      internship_status: item.status,
+      has_report: Boolean(report),
+      report_id: report?.id ?? null,
+      closing_status: report?.closing_status ?? null,
+      completed_workload: report?.completed_workload ?? null,
+      report_created_at: report?.created_at ?? null,
     };
-  }) as UnitFinalReportRow[];
+  }) as UnitFinalReportInternRow[];
+
+  if (status === "pendente") {
+    rows = rows.filter((item) => !item.has_report && ["em_andamento", "suspenso"].includes(item.internship_status));
+  }
+
+  if (status === "finalizado") {
+    rows = rows.filter((item) => item.has_report);
+  }
+
+  if (student) {
+    rows = rows.filter((item) =>
+      item.student_name.toLowerCase().includes(student),
+    );
+  }
 
   return {
     unit,
-    internOptions,
-    reports: reportRows,
+    rows,
+    courses: (coursesResult.data ?? []) as UnitFinalReportCourseOption[],
+    error: null,
+  };
+}
+
+export async function getUnitFinalReportDetail(internshipId: string) {
+  const { supabase, profile, error: profileError } = await getUnitProfile();
+
+  if (profileError || !profile?.municipal_unit_id) {
+    return {
+      detail: null,
+      error: profileError,
+    };
+  }
+
+  const { data: internship, error: internshipError } = await supabase
+    .from("internships")
+    .select("id, student_id, institution_id, course_id, municipal_unit_id, supervisor_name, start_date, end_date, schedule, status")
+    .eq("id", internshipId)
+    .single();
+
+  if (internshipError || !internship) {
+    return {
+      detail: null,
+      error: internshipError?.message ?? "Estágio não encontrado.",
+    };
+  }
+
+  if (internship.municipal_unit_id !== profile.municipal_unit_id) {
+    return {
+      detail: null,
+      error: "Este estágio não pertence à sua unidade.",
+    };
+  }
+
+  const [studentResult, institutionResult, courseResult, reportResult] =
+    await Promise.all([
+      supabase
+        .from("students")
+        .select("id, full_name, email")
+        .eq("id", internship.student_id)
+        .single(),
+
+      supabase
+        .from("institutions")
+        .select("id, name")
+        .eq("id", internship.institution_id)
+        .single(),
+
+      supabase
+        .from("courses")
+        .select("id, name")
+        .eq("id", internship.course_id)
+        .single(),
+
+      supabase
+        .from("final_reports")
+        .select("id, performed_period, completed_workload, activities_summary, supervisor_notes, closing_status, created_at")
+        .eq("internship_id", internship.id)
+        .maybeSingle(),
+    ]);
+
+  const error =
+    studentResult.error?.message ??
+    institutionResult.error?.message ??
+    courseResult.error?.message ??
+    reportResult.error?.message ??
+    null;
+
+  if (error) {
+    return {
+      detail: null,
+      error,
+    };
+  }
+
+  const detail = {
+    id: internship.id,
+    student_name: studentResult.data?.full_name ?? "Estudante não identificado",
+    student_email: studentResult.data?.email ?? null,
+    institution_name: institutionResult.data?.name ?? "Instituição não identificada",
+    course_name: courseResult.data?.name ?? "Curso não identificado",
+    supervisor_name: internship.supervisor_name,
+    start_date: internship.start_date,
+    end_date: internship.end_date,
+    schedule: internship.schedule,
+    status: internship.status,
+    report: reportResult.data
+      ? {
+          id: reportResult.data.id,
+          performed_period: reportResult.data.performed_period,
+          completed_workload: reportResult.data.completed_workload,
+          activities_summary: reportResult.data.activities_summary,
+          supervisor_notes: reportResult.data.supervisor_notes,
+          closing_status: reportResult.data.closing_status,
+          created_at: reportResult.data.created_at,
+        }
+      : null,
+  } as UnitFinalReportDetail;
+
+  return {
+    detail,
     error: null,
   };
 }

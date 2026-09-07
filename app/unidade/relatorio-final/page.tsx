@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { SystemShell } from "@/components/system/SystemShell";
-import { createUnitFinalReport } from "./actions";
 import { getUnitFinalReportsData } from "@/lib/queries/unit-final-reports";
 
 type PageProps = {
   searchParams?: Promise<{
+    status?: string;
+    curso?: string;
+    estudante?: string;
     sucesso?: string;
     erro?: string;
   }>;
@@ -13,7 +15,19 @@ type PageProps = {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function closingStatusLabel(status: string) {
+function internshipStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    aguardando_inicio: "Aguardando início",
+    em_andamento: "Em andamento",
+    suspenso: "Suspenso",
+    encerrado: "Encerrado",
+    cancelado: "Cancelado",
+  };
+
+  return labels[status] ?? status;
+}
+
+function closingStatusLabel(status: string | null) {
   const labels: Record<string, string> = {
     concluido: "Concluído",
     concluido_com_observacao: "Concluído com observação",
@@ -22,10 +36,10 @@ function closingStatusLabel(status: string) {
     cancelado: "Cancelado",
   };
 
-  return labels[status] ?? status;
+  return status ? labels[status] ?? status : "Pendente";
 }
 
-function statusClass(status: string) {
+function statusClass(status: string | null) {
   if (status === "concluido") {
     return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
   }
@@ -53,27 +67,34 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function hasFilters(params: Awaited<PageProps["searchParams"]>) {
+  return Boolean(params?.status || params?.curso || params?.estudante);
+}
+
 export default async function UnidadeRelatorioFinalPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
-  const { unit, internOptions, reports, error } =
-    await getUnitFinalReportsData();
 
-  const emAndamento = internOptions.length;
-  const finalizados = reports.length;
-  const comObservacao = reports.filter(
+  const { unit, rows, courses, error } = await getUnitFinalReportsData({
+    status: params?.status,
+    courseId: params?.curso,
+    student: params?.estudante,
+  });
+
+  const filtered = hasFilters(params);
+  const exibidos = rows.length;
+  const pendentes = rows.filter((item) => !item.has_report).length;
+  const finalizados = rows.filter((item) => item.has_report).length;
+  const comObservacao = rows.filter(
     (item) => item.closing_status === "concluido_com_observacao",
-  ).length;
-  const antecipados = reports.filter(
-    (item) => item.closing_status === "encerrado_antecipadamente",
   ).length;
 
   return (
     <SystemShell
       areaLabel="Unidade Municipal"
-      title="Relatório Final"
-      description="Registre o encerramento do estágio, resumo das atividades, carga horária cumprida e observações da unidade."
+      title="Relatórios Finais"
+      description="Acompanhe os estágios da unidade e registre o relatório final de encerramento quando necessário."
     >
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
@@ -118,12 +139,91 @@ export default async function UnidadeRelatorioFinalPage({
         </p>
       </section>
 
+      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
+              Filtros de consulta
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Localize o estágio antes de registrar ou consultar o relatório final.
+            </p>
+          </div>
+
+          {filtered && (
+            <Link
+              href="/unidade/relatorio-final"
+              className="text-xs font-black uppercase tracking-wide text-teal-700 hover:text-teal-900"
+            >
+              Limpar filtros
+            </Link>
+          )}
+        </div>
+
+        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-[220px_260px_1fr_auto]">
+          <label className="grid gap-1">
+            <span className="text-xs font-bold text-slate-600">Situação</span>
+            <select
+              name="status"
+              defaultValue={params?.status ?? ""}
+              className="h-10 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+            >
+              <option value="">Todos</option>
+              <option value="pendente">Pendente de relatório</option>
+              <option value="finalizado">Relatório registrado</option>
+            </select>
+          </label>
+
+          <label className="grid gap-1">
+            <span className="text-xs font-bold text-slate-600">Curso</span>
+            <select
+              name="curso"
+              defaultValue={params?.curso ?? ""}
+              className="h-10 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+            >
+              <option value="">Todos</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-1">
+            <span className="text-xs font-bold text-slate-600">Estudante</span>
+            <input
+              name="estudante"
+              defaultValue={params?.estudante ?? ""}
+              placeholder="Buscar por nome"
+              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+            />
+          </label>
+
+          <div className="flex items-end">
+            <button
+              type="submit"
+              className="h-10 rounded-lg bg-teal-700 px-4 text-xs font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
+            >
+              Filtrar
+            </button>
+          </div>
+        </form>
+      </section>
+
       <div className="mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-            Aptos para encerramento
+            Exibidos
           </p>
-          <p className="text-xl font-black text-slate-950">{emAndamento}</p>
+          <p className="text-xl font-black text-slate-950">{exibidos}</p>
+        </div>
+
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Pendentes
+          </p>
+          <p className="text-xl font-black text-amber-700">{pendentes}</p>
         </div>
 
         <div>
@@ -139,220 +239,114 @@ export default async function UnidadeRelatorioFinalPage({
           </p>
           <p className="text-xl font-black text-sky-700">{comObservacao}</p>
         </div>
-
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-            Antecipados
-          </p>
-          <p className="text-xl font-black text-amber-700">{antecipados}</p>
-        </div>
       </div>
 
-      <section className="grid gap-5 xl:grid-cols-[390px_minmax(0,1fr)]">
-        <form
-          action={createUnitFinalReport}
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-        >
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
           <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-            Registrar relatório
+            Estágios e relatórios finais
           </h2>
           <p className="mt-1 text-xs text-slate-500">
-            O relatório final encerra o estágio no âmbito da unidade municipal.
+            Consulta limitada aos 200 estágios mais recentes da unidade conforme os filtros aplicados.
           </p>
+        </div>
 
-          <div className="mt-4 grid gap-3">
-            <label className="grid gap-1">
-              <span className="text-xs font-bold text-slate-600">Estagiário</span>
-              <select
-                name="internship_id"
-                required
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              >
-                <option value="">Selecione</option>
-                {internOptions.map((intern) => (
-                  <option key={intern.id} value={intern.id}>
-                    {intern.student_name} — {intern.course_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="grid gap-1">
-              <span className="text-xs font-bold text-slate-600">
-                Período efetivamente realizado
-              </span>
-              <input
-                name="performed_period"
-                required
-                placeholder="Ex.: 06/09/2026 a 28/10/2026"
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              />
-            </label>
-
-            <label className="grid gap-1">
-              <span className="text-xs font-bold text-slate-600">
-                Carga horária cumprida
-              </span>
-              <input
-                name="completed_workload"
-                type="number"
-                min="1"
-                required
-                placeholder="Ex.: 80"
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              />
-            </label>
-
-            <label className="grid gap-1">
-              <span className="text-xs font-bold text-slate-600">
-                Situação do encerramento
-              </span>
-              <select
-                name="closing_status"
-                required
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              >
-                <option value="">Selecione</option>
-                <option value="concluido">Concluído</option>
-                <option value="concluido_com_observacao">
-                  Concluído com observação
-                </option>
-                <option value="encerrado_antecipadamente">
-                  Encerrado antecipadamente
-                </option>
-              </select>
-            </label>
-
-            <label className="grid gap-1">
-              <span className="text-xs font-bold text-slate-600">
-                Resumo das atividades
-              </span>
-              <textarea
-                name="activities_summary"
-                rows={5}
-                required
-                placeholder="Descreva as atividades desenvolvidas pelo estudante durante o estágio."
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              />
-            </label>
-
-            <label className="grid gap-1">
-              <span className="text-xs font-bold text-slate-600">
-                Observações do supervisor
-              </span>
-              <textarea
-                name="supervisor_notes"
-                rows={4}
-                placeholder="Informe observações, recomendações ou ressalvas, se houver."
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              />
-            </label>
-
-            <button
-              type="submit"
-              disabled={internOptions.length === 0}
-              className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              Registrar relatório final
-            </button>
+        {rows.length === 0 ? (
+          <div className="p-5 text-sm text-slate-600">
+            Nenhum estágio encontrado para os filtros informados.
           </div>
-        </form>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1050px] border-collapse text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-3 py-2 font-black">Estudante</th>
+                  <th className="px-3 py-2 font-black">Instituição</th>
+                  <th className="px-3 py-2 font-black">Curso</th>
+                  <th className="px-3 py-2 font-black">Supervisor</th>
+                  <th className="px-3 py-2 font-black">Período</th>
+                  <th className="px-3 py-2 font-black">Estágio</th>
+                  <th className="px-3 py-2 font-black">Relatório</th>
+                  <th className="px-3 py-2 text-right font-black">Ação</th>
+                </tr>
+              </thead>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-            <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-              Relatórios finais registrados
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Listagem real dos encerramentos registrados pela unidade.
-            </p>
-          </div>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50">
+                    <td className="px-3 py-2 align-top">
+                      <p className="font-black text-slate-950">{row.student_name}</p>
+                      {row.student_email && (
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {row.student_email}
+                        </p>
+                      )}
+                    </td>
 
-          {reports.length === 0 ? (
-            <div className="p-5 text-sm text-slate-600">
-              Nenhum relatório final registrado até o momento.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[920px] border-collapse text-left text-xs">
-                <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2 font-black">Estagiário</th>
-                    <th className="px-3 py-2 font-black">Instituição</th>
-                    <th className="px-3 py-2 font-black">Curso</th>
-                    <th className="px-3 py-2 font-black">Supervisor</th>
-                    <th className="px-3 py-2 font-black">Período</th>
-                    <th className="px-3 py-2 font-black">Carga</th>
-                    <th className="px-3 py-2 font-black">Situação</th>
-                    <th className="px-3 py-2 font-black">Resumo</th>
-                  </tr>
-                </thead>
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {row.institution_name}
+                    </td>
 
-                <tbody className="divide-y divide-slate-100">
-                  {reports.map((report) => (
-                    <tr key={report.id} className="hover:bg-slate-50">
-                      <td className="px-3 py-2 align-top font-black text-slate-950">
-                        {report.student_name}
-                      </td>
+                    <td className="px-3 py-2 align-top font-semibold text-slate-800">
+                      {row.course_name}
+                    </td>
 
-                      <td className="px-3 py-2 align-top text-slate-700">
-                        {report.institution_name}
-                      </td>
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {row.supervisor_name}
+                    </td>
 
-                      <td className="px-3 py-2 align-top font-semibold text-slate-800">
-                        {report.course_name}
-                      </td>
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {formatDate(row.start_date)} a {formatDate(row.end_date)}
+                      {row.schedule && (
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {row.schedule}
+                        </p>
+                      )}
+                    </td>
 
-                      <td className="px-3 py-2 align-top text-slate-700">
-                        {report.supervisor_name}
-                      </td>
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {internshipStatusLabel(row.internship_status)}
+                    </td>
 
-                      <td className="px-3 py-2 align-top text-slate-700">
-                        {report.performed_period}
-                      </td>
+                    <td className="px-3 py-2 align-top">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${statusClass(
+                          row.closing_status,
+                        )}`}
+                      >
+                        {closingStatusLabel(row.closing_status)}
+                      </span>
+                      {row.completed_workload !== null && (
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          {row.completed_workload}h
+                        </p>
+                      )}
+                    </td>
 
-                      <td className="px-3 py-2 align-top text-slate-700">
-                        {report.completed_workload ?? "-"}h
-                      </td>
-
-                      <td className="px-3 py-2 align-top">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${statusClass(
-                            report.closing_status,
-                          )}`}
+                    <td className="px-3 py-2 align-top">
+                      <div className="flex justify-end">
+                        <Link
+                          href={`/unidade/relatorio-final/${row.id}`}
+                          className={
+                            row.has_report
+                              ? "rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                              : "rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-teal-800"
+                          }
                         >
-                          {closingStatusLabel(report.closing_status)}
-                        </span>
-                      </td>
-
-                      <td className="px-3 py-2 align-top text-slate-700">
-                        <details className="max-w-[260px] text-[11px] text-slate-500">
-                          <summary className="cursor-pointer font-semibold text-slate-600">
-                            Ver relatório
-                          </summary>
-                          <p className="mt-1 leading-5">{report.activities_summary}</p>
-                          {report.supervisor_notes && (
-                            <p className="mt-2 leading-5">
-                              <strong>Observações:</strong>{" "}
-                              {report.supervisor_notes}
-                            </p>
-                          )}
-                          <p className="mt-2 text-[10px] text-slate-400">
-                            Registrado em {formatDate(report.created_at)}
-                          </p>
-                        </details>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
-            Após o relatório final, o estágio passa para situação encerrada.
+                          {row.has_report ? "Ver relatório" : "Registrar"}
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </section>
+        )}
+
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
+          O relatório final é registrado em página individual do estágio, evitando formulários extensos e listas difíceis de usar.
+        </div>
       </section>
     </SystemShell>
   );
