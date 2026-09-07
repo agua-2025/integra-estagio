@@ -68,54 +68,67 @@ export async function getUnitInternsData() {
     };
   }
 
-  const { data: authorizationsData, error: authorizationsError } = await supabase
-    .from("internship_authorizations")
+  const { data: internshipsData, error: internshipsError } = await supabase
+    .from("internships")
     .select(
-      "id, student_id, institution_id, course_id, municipal_unit_id, supervisor_name, authorized_start_date, authorized_end_date, authorized_schedule, status, notes, created_at",
+      "id, authorization_id, student_id, institution_id, course_id, municipal_unit_id, supervisor_name, start_date, end_date, schedule, status, created_at",
     )
     .eq("municipal_unit_id", profile.municipal_unit_id)
-    .order("authorized_start_date", { ascending: false });
+    .order("start_date", { ascending: false });
 
-  if (authorizationsError) {
+  if (internshipsError) {
     return {
       unit,
       interns: [] as UnitInternAuthorizationRow[],
-      error: authorizationsError.message,
+      error: internshipsError.message,
     };
   }
 
-  const authorizations = authorizationsData ?? [];
+  const internships = internshipsData ?? [];
 
   const studentIds = Array.from(
-    new Set(authorizations.map((item) => item.student_id).filter(Boolean)),
+    new Set(internships.map((item) => item.student_id).filter(Boolean)),
   ) as string[];
 
   const institutionIds = Array.from(
-    new Set(authorizations.map((item) => item.institution_id).filter(Boolean)),
+    new Set(internships.map((item) => item.institution_id).filter(Boolean)),
   ) as string[];
 
   const courseIds = Array.from(
-    new Set(authorizations.map((item) => item.course_id).filter(Boolean)),
+    new Set(internships.map((item) => item.course_id).filter(Boolean)),
   ) as string[];
 
-  const [studentsResult, institutionsResult, coursesResult] = await Promise.all([
-    studentIds.length > 0
-      ? supabase.from("students").select("id, full_name, email").in("id", studentIds)
-      : { data: [], error: null },
+  const authorizationIds = Array.from(
+    new Set(internships.map((item) => item.authorization_id).filter(Boolean)),
+  ) as string[];
 
-    institutionIds.length > 0
-      ? supabase.from("institutions").select("id, name").in("id", institutionIds)
-      : { data: [], error: null },
+  const [studentsResult, institutionsResult, coursesResult, authorizationsResult] =
+    await Promise.all([
+      studentIds.length > 0
+        ? supabase.from("students").select("id, full_name, email").in("id", studentIds)
+        : { data: [], error: null },
 
-    courseIds.length > 0
-      ? supabase.from("courses").select("id, name").in("id", courseIds)
-      : { data: [], error: null },
-  ]);
+      institutionIds.length > 0
+        ? supabase.from("institutions").select("id, name").in("id", institutionIds)
+        : { data: [], error: null },
+
+      courseIds.length > 0
+        ? supabase.from("courses").select("id, name").in("id", courseIds)
+        : { data: [], error: null },
+
+      authorizationIds.length > 0
+        ? supabase
+            .from("internship_authorizations")
+            .select("id, notes")
+            .in("id", authorizationIds)
+        : { data: [], error: null },
+    ]);
 
   const error =
     studentsResult.error?.message ??
     institutionsResult.error?.message ??
     coursesResult.error?.message ??
+    authorizationsResult.error?.message ??
     null;
 
   if (error) {
@@ -138,7 +151,11 @@ export async function getUnitInternsData() {
     (coursesResult.data ?? []).map((item) => [item.id, item]),
   );
 
-  const interns = authorizations.map((item) => ({
+  const authorizations = new Map(
+    (authorizationsResult.data ?? []).map((item) => [item.id, item]),
+  );
+
+  const interns = internships.map((item) => ({
     id: item.id,
     student_name:
       students.get(item.student_id)?.full_name ?? "Estudante não identificado",
@@ -148,11 +165,11 @@ export async function getUnitInternsData() {
     course_name: courses.get(item.course_id)?.name ?? "Curso não identificado",
     municipal_unit_name: unit.name,
     supervisor_name: item.supervisor_name,
-    authorized_start_date: item.authorized_start_date,
-    authorized_end_date: item.authorized_end_date,
-    authorized_schedule: item.authorized_schedule,
+    authorized_start_date: item.start_date,
+    authorized_end_date: item.end_date,
+    authorized_schedule: item.schedule,
     status: item.status,
-    notes: item.notes,
+    notes: authorizations.get(item.authorization_id)?.notes ?? null,
     created_at: item.created_at,
   })) as UnitInternAuthorizationRow[];
 

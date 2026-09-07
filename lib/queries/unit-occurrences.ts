@@ -77,20 +77,20 @@ export async function getUnitOccurrencesData() {
     };
   }
 
-  const { data: authorizationsData, error: authorizationsError } = await supabase
-    .from("internship_authorizations")
-    .select("id, student_id, institution_id, course_id, supervisor_name")
+  const { data: internshipsData, error: internshipsError } = await supabase
+    .from("internships")
+    .select("id, authorization_id, student_id, institution_id, course_id, municipal_unit_id, supervisor_name, status")
     .eq("municipal_unit_id", profile.municipal_unit_id)
-    .eq("status", "autorizado")
+    .in("status", ["aguardando_inicio", "em_andamento", "suspenso"])
     .order("created_at", { ascending: false });
 
   const { data: occurrencesData, error: occurrencesError } = await supabase
     .from("internship_occurrences")
-    .select("id, authorization_id, student_id, institution_id, course_id, occurrence_type, occurrence_date, description, status, resolution_notes, created_at")
+    .select("id, internship_id, authorization_id, student_id, institution_id, course_id, occurrence_type, occurrence_date, description, status, resolution_notes, created_at")
     .eq("municipal_unit_id", profile.municipal_unit_id)
     .order("created_at", { ascending: false });
 
-  const baseError = authorizationsError?.message ?? occurrencesError?.message ?? null;
+  const baseError = internshipsError?.message ?? occurrencesError?.message ?? null;
 
   if (baseError) {
     return {
@@ -101,26 +101,26 @@ export async function getUnitOccurrencesData() {
     };
   }
 
-  const authorizations = authorizationsData ?? [];
+  const internships = internshipsData ?? [];
   const occurrences = occurrencesData ?? [];
 
   const studentIds = Array.from(
     new Set([
-      ...authorizations.map((item) => item.student_id),
+      ...internships.map((item) => item.student_id),
       ...occurrences.map((item) => item.student_id),
     ].filter(Boolean)),
   ) as string[];
 
   const institutionIds = Array.from(
     new Set([
-      ...authorizations.map((item) => item.institution_id),
+      ...internships.map((item) => item.institution_id),
       ...occurrences.map((item) => item.institution_id),
     ].filter(Boolean)),
   ) as string[];
 
   const courseIds = Array.from(
     new Set([
-      ...authorizations.map((item) => item.course_id),
+      ...internships.map((item) => item.course_id),
       ...occurrences.map((item) => item.course_id),
     ].filter(Boolean)),
   ) as string[];
@@ -158,7 +158,7 @@ export async function getUnitOccurrencesData() {
   const institutions = new Map((institutionsResult.data ?? []).map((item) => [item.id, item]));
   const courses = new Map((coursesResult.data ?? []).map((item) => [item.id, item]));
 
-  const internOptions = authorizations.map((item) => ({
+  const internOptions = internships.map((item) => ({
     id: item.id,
     student_name: students.get(item.student_id)?.full_name ?? "Estudante não identificado",
     course_name: courses.get(item.course_id)?.name ?? "Curso não identificado",

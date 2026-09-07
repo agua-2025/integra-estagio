@@ -59,12 +59,12 @@ async function ensureUnitPermission() {
 export async function createUnitOccurrence(formData: FormData) {
   const { supabase, userId, municipalUnitId } = await ensureUnitPermission();
 
-  const authorizationId = normalizeText(formData.get("authorization_id"));
+  const internshipId = normalizeText(formData.get("internship_id"));
   const occurrenceType = normalizeText(formData.get("occurrence_type"));
   const occurrenceDate = normalizeText(formData.get("occurrence_date"));
   const description = normalizeText(formData.get("description"));
 
-  if (!authorizationId) {
+  if (!internshipId) {
     fail("Selecione o estagiário.");
   }
 
@@ -80,26 +80,27 @@ export async function createUnitOccurrence(formData: FormData) {
     fail("Descreva a ocorrência.");
   }
 
-  const { data: authorization, error: authorizationError } = await supabase
-    .from("internship_authorizations")
-    .select("id, student_id, institution_id, course_id, municipal_unit_id")
-    .eq("id", authorizationId)
+  const { data: internship, error: internshipError } = await supabase
+    .from("internships")
+    .select("id, authorization_id, student_id, institution_id, course_id, municipal_unit_id")
+    .eq("id", internshipId)
     .single();
 
-  if (authorizationError || !authorization) {
-    fail(authorizationError?.message ?? "Autorização não encontrada.");
+  if (internshipError || !internship) {
+    fail(internshipError?.message ?? "Estágio não encontrado.");
   }
 
-  if (authorization.municipal_unit_id !== municipalUnitId) {
-    fail("Esta autorização não pertence à sua unidade.");
+  if (internship.municipal_unit_id !== municipalUnitId) {
+    fail("Este estágio não pertence à sua unidade.");
   }
 
   const { error } = await supabase.from("internship_occurrences").insert({
-    authorization_id: authorization.id,
-    student_id: authorization.student_id,
-    institution_id: authorization.institution_id,
-    course_id: authorization.course_id,
-    municipal_unit_id: authorization.municipal_unit_id,
+    internship_id: internship.id,
+    authorization_id: internship.authorization_id,
+    student_id: internship.student_id,
+    institution_id: internship.institution_id,
+    course_id: internship.course_id,
+    municipal_unit_id: internship.municipal_unit_id,
     occurrence_type: occurrenceType,
     occurrence_date: occurrenceDate,
     description,
@@ -112,6 +113,8 @@ export async function createUnitOccurrence(formData: FormData) {
   }
 
   revalidatePath("/unidade/ocorrencias");
+  revalidatePath("/coordenadoria/ocorrencias");
+
   redirect("/unidade/ocorrencias?sucesso=1");
 }
 
@@ -155,5 +158,7 @@ export async function resolveUnitOccurrence(formData: FormData) {
   }
 
   revalidatePath("/unidade/ocorrencias");
+  revalidatePath("/coordenadoria/ocorrencias");
+
   redirect("/unidade/ocorrencias?resolvida=1");
 }

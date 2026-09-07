@@ -13,6 +13,11 @@ function fail(message: string): never {
   redirect(`/coordenadoria/autorizacoes?erro=${encodeURIComponent(message)}`);
 }
 
+function internshipStatusFromStartDate(startDate: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  return startDate <= today ? "em_andamento" : "aguardando_inicio";
+}
+
 export async function createInternshipAuthorization(formData: FormData) {
   const supabase = await createClient();
 
@@ -94,7 +99,7 @@ export async function createInternshipAuthorization(formData: FormData) {
     fail("Já existe autorização registrada para esta apresentação.");
   }
 
-  const { error: insertError } = await supabase
+  const { data: authorization, error: insertError } = await supabase
     .from("internship_authorizations")
     .insert({
       presentation_id: presentation.id,
@@ -111,10 +116,29 @@ export async function createInternshipAuthorization(formData: FormData) {
       status: "autorizado",
       authorized_by: userId,
       notes,
-    });
+    })
+    .select("id")
+    .single();
 
-  if (insertError) {
-    fail(insertError.message);
+  if (insertError || !authorization) {
+    fail(insertError?.message ?? "Não foi possível emitir a autorização.");
+  }
+
+  const { error: internshipError } = await supabase.from("internships").insert({
+    authorization_id: authorization.id,
+    student_id: presentation.student_id,
+    institution_id: presentation.institution_id,
+    course_id: presentation.course_id,
+    municipal_unit_id: presentation.municipal_unit_id,
+    supervisor_name: supervisorName,
+    start_date: authorizedStartDate,
+    end_date: authorizedEndDate,
+    schedule: authorizedSchedule,
+    status: internshipStatusFromStartDate(authorizedStartDate),
+  });
+
+  if (internshipError) {
+    fail(internshipError.message);
   }
 
   const { error: updatePresentationError } = await supabase
@@ -131,6 +155,8 @@ export async function createInternshipAuthorization(formData: FormData) {
 
   revalidatePath("/coordenadoria/autorizacoes");
   revalidatePath("/coordenadoria/estudantes");
+  revalidatePath("/instituicao/estudantes");
+  revalidatePath("/unidade/estagiarios");
 
   redirect("/coordenadoria/autorizacoes?sucesso=1");
 }

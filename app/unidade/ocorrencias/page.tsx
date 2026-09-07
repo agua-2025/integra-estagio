@@ -185,7 +185,7 @@ export default async function UnidadeOcorrenciasPage({
             <label className="grid gap-1">
               <span className="text-xs font-bold text-slate-600">Estagiário</span>
               <select
-                name="authorization_id"
+                name="internship_id"
                 required
                 className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
               >
