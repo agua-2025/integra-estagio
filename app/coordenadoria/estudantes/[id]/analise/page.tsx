@@ -356,8 +356,10 @@ export default async function AnaliseEstudantePage({
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
             <p className="font-black">Atenção</p>
             <p className="mt-1">
-              A marcação como pronto para emissão da autorização ainda não cria a autorização
-              de início automaticamente. Essa será a próxima etapa do fluxo.
+              A análise da apresentação não autoriza o início do estágio.
+              A autorização somente será emitida em etapa própria, após conferência
+              do Acordo de Cooperação, Termo de Compromisso, plano de atividades,
+              seguro, matrícula e demais documentos exigidos.
             </p>
           </div>
         </aside>
