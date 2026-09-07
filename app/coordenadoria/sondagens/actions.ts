@@ -211,8 +211,14 @@ export async function finalizeCoordinationInquiry(formData: FormData) {
     finalApprovedStudents = null;
   }
 
-  const nextStatus =
-    decision === "precisa_complementacao" ? "em_analise" : decision;
+  const statusByDecision: Record<string, string> = {
+    viavel: "viavel",
+    parcialmente_viavel: "viavel_parcial",
+    inviavel: "sem_disponibilidade",
+    precisa_complementacao: "complementacao_solicitada",
+  };
+
+  const nextStatus = statusByDecision[decision];
 
   const { error } = await supabase
     .from("inquiries")
@@ -233,5 +239,7 @@ export async function finalizeCoordinationInquiry(formData: FormData) {
   }
 
   revalidatePath("/coordenadoria/sondagens");
-  redirect(`/coordenadoria/sondagens/${inquiryId}/analise?concluida=1`);
+  redirect("/coordenadoria/sondagens?concluida=1");
 }
+
+

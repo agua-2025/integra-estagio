@@ -18,6 +18,9 @@ function statusLabel(status: string) {
     em_analise: "Em análise",
     encaminhada_unidade: "Encaminhada",
     viavel: "Viável",
+    viavel_parcial: "Viável parcial",
+    sem_disponibilidade: "Sem disponibilidade",
+    complementacao_solicitada: "Complementação solicitada",
     parcialmente_viavel: "Parcial",
     inviavel: "Inviável",
     concluida: "Concluída",
@@ -31,11 +34,11 @@ function statusClass(status: string) {
     return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
   }
 
-  if (status === "parcialmente_viavel") {
+  if (status === "parcialmente_viavel" || status === "viavel_parcial") {
     return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
   }
 
-  if (status === "inviavel") {
+  if (status === "inviavel" || status === "sem_disponibilidade") {
     return "bg-red-50 text-red-700 ring-1 ring-red-200";
   }
 
@@ -49,6 +52,9 @@ function statusClass(status: string) {
 function decisionLabel(decision: string | null) {
   const labels: Record<string, string> = {
     viavel: "Viável",
+    viavel_parcial: "Viável parcial",
+    sem_disponibilidade: "Sem disponibilidade",
+    complementacao_solicitada: "Complementação solicitada",
     parcialmente_viavel: "Parcial",
     inviavel: "Inviável",
     precisa_complementacao: "Complementar",
@@ -329,3 +335,4 @@ export default async function CoordenadoriaSondagensPage({
     </SystemShell>
   );
 }
+
