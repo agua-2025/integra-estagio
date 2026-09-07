@@ -1,82 +1,67 @@
 import Link from "next/link";
-import { ActionCard } from "@/components/system/ActionCard";
-import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
+import { getUnitInternsData } from "@/lib/queries/unit-interns";
 
-const summaries = [
-  {
-    label: "Autorizados",
-    value: "0",
-    description: "Estagiários liberados para atuação na unidade.",
-  },
-  {
-    label: "Em andamento",
-    value: "0",
-    description: "Estágios em execução na unidade municipal.",
-  },
-  {
-    label: "Ocorrências",
-    value: "0",
-    description: "Registros pendentes de acompanhamento.",
-  },
-  {
-    label: "Encerramento",
-    value: "0",
-    description: "Estágios próximos do término ou aguardando relatório.",
-  },
-];
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const interns = [
-  {
-    student: "Estudante Exemplo 01",
-    institution: "Faculdade ou Universidade Exemplo",
-    course: "Direito",
-    status: "Autorizado para início",
-    period: "01/06/2026 a 30/08/2026",
-    schedule: "Segunda a quinta, 13h às 17h",
-    supervisor: "Servidor Supervisor Exemplo",
-    field: "Jurídico / Administração",
-  },
-  {
-    student: "Estudante Exemplo 02",
-    institution: "Instituição Cooperada Exemplo",
-    course: "Serviço Social",
-    status: "Em andamento",
-    period: "15/05/2026 a 15/08/2026",
-    schedule: "Terça e quinta, 7h às 11h",
-    supervisor: "Supervisora Exemplo",
-    field: "Assistência Social",
-  },
-  {
-    student: "Estudante Exemplo 03",
-    institution: "Centro de Ensino Técnico Exemplo",
-    course: "Técnico em Administração",
-    status: "Aguardando início",
-    period: "10/06/2026 a 10/09/2026",
-    schedule: "A definir com a unidade",
-    supervisor: "Aguardando confirmação",
-    field: "Administração e Gestão Pública",
-  },
-];
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    aguardando_unidade: "Aguardando unidade",
+    aguardando_supervisor: "Aguardando supervisor",
+    pronto_para_autorizar: "Pronto para autorizar",
+    autorizado: "Autorizado para início",
+    suspenso: "Suspenso",
+    cancelado: "Cancelado",
+    encerrado: "Encerrado",
+  };
+
+  return labels[status] ?? status;
+}
 
 function statusClass(status: string) {
-  if (status === "Em andamento") {
-    return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
+  if (status === "autorizado") {
+    return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
   }
 
-  if (status === "Autorizado para início") {
-    return "bg-sky-50 text-sky-800 ring-1 ring-sky-200";
+  if (status === "encerrado") {
+    return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+  }
+
+  if (["suspenso", "cancelado"].includes(status)) {
+    return "bg-red-50 text-red-700 ring-1 ring-red-200";
   }
 
   return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
 }
 
-export default function UnidadeEstagiariosPage() {
+function formatDate(value: string | null) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+export default async function UnidadeEstagiariosPage() {
+  const { unit, interns, error } = await getUnitInternsData();
+
+  const autorizados = interns.filter((item) => item.status === "autorizado").length;
+  const suspensos = interns.filter((item) => item.status === "suspenso").length;
+  const encerrados = interns.filter((item) => item.status === "encerrado").length;
+  const ativos = interns.filter((item) =>
+    ["autorizado", "pronto_para_autorizar"].includes(item.status),
+  ).length;
+
   return (
     <SystemShell
       areaLabel="Unidade Municipal"
-      title="Estagiários da Unidade"
-      description="Acompanhe estudantes autorizados para atuação na unidade, supervisão, horários, ocorrências e encerramento."
+      title="Estagiários da unidade"
+      description="Acompanhe os estudantes autorizados para atuação na unidade municipal."
     >
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
@@ -94,126 +79,155 @@ export default function UnidadeEstagiariosPage() {
         </Link>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {summaries.map((item) => (
-          <SummaryCard key={item.label} {...item} />
-        ))}
-      </div>
+      {error && (
+        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {error}
+        </section>
+      )}
 
-      <section className="mt-8">
-        <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-              Estagiários vinculados
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Listagem compacta para acompanhamento operacional dos estudantes
-              autorizados na unidade municipal.
-            </p>
-          </div>
+      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+          Unidade municipal
+        </p>
+        <p className="mt-1 text-lg font-black text-slate-950">
+          {unit?.name ?? "Unidade não identificada"}
+        </p>
+        {unit?.responsible_name && (
+          <p className="mt-1 text-sm text-slate-600">
+            Responsável: {unit.responsible_name}
+          </p>
+        )}
+      </section>
 
-          <div className="flex flex-wrap gap-2">
-            {["Todos", "Autorizados", "Em andamento", "Ocorrências", "Encerramento"].map(
-              (filter) => (
-                <button
-                  key={filter}
-                  type="button"
-                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
-                >
-                  {filter}
-                </button>
-              ),
-            )}
-          </div>
+      <div className="mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Autorizados
+          </p>
+          <p className="text-xl font-black text-sky-700">{autorizados}</p>
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Ativos
+          </p>
+          <p className="text-xl font-black text-teal-700">{ativos}</p>
+        </div>
+
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Suspensos
+          </p>
+          <p className="text-xl font-black text-red-700">{suspensos}</p>
+        </div>
+
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            Encerrados
+          </p>
+          <p className="text-xl font-black text-slate-950">{encerrados}</p>
+        </div>
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
+            Estagiários vinculados
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Listagem real dos estudantes com autorização de início emitida para esta unidade.
+          </p>
+        </div>
+
+        {interns.length === 0 ? (
+          <div className="p-5 text-sm text-slate-600">
+            Nenhum estagiário autorizado para esta unidade até o momento.
+          </div>
+        ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <table className="w-full min-w-[1050px] border-collapse text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-5 py-4 font-bold">Estudante</th>
-                  <th className="px-5 py-4 font-bold">Instituição</th>
-                  <th className="px-5 py-4 font-bold">Curso</th>
-                  <th className="px-5 py-4 font-bold">Campo</th>
-                  <th className="px-5 py-4 font-bold">Período</th>
-                  <th className="px-5 py-4 font-bold">Horários</th>
-                  <th className="px-5 py-4 font-bold">Supervisor</th>
-                  <th className="px-5 py-4 font-bold">Status</th>
-                  <th className="px-5 py-4 text-right font-bold">Ações</th>
+                  <th className="px-3 py-2 font-black">Estudante</th>
+                  <th className="px-3 py-2 font-black">Instituição</th>
+                  <th className="px-3 py-2 font-black">Curso</th>
+                  <th className="px-3 py-2 font-black">Supervisor</th>
+                  <th className="px-3 py-2 font-black">Início</th>
+                  <th className="px-3 py-2 font-black">Término</th>
+                  <th className="px-3 py-2 font-black">Horário</th>
+                  <th className="px-3 py-2 font-black">Status</th>
+                  <th className="px-3 py-2 font-black">Observações</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-100">
                 {interns.map((intern) => (
-                  <tr key={`${intern.student}-${intern.course}`} className="transition hover:bg-slate-50">
-                    <td className="px-5 py-4 font-bold text-slate-950">
-                      {intern.student}
+                  <tr key={intern.id} className="hover:bg-slate-50">
+                    <td className="px-3 py-2 align-top">
+                      <p className="font-black text-slate-950">
+                        {intern.student_name}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        {intern.student_email ?? "E-mail não informado"}
+                      </p>
                     </td>
-                    <td className="px-5 py-4 text-slate-700">{intern.institution}</td>
-                    <td className="px-5 py-4 font-semibold text-slate-800">
-                      {intern.course}
+
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {intern.institution_name}
                     </td>
-                    <td className="px-5 py-4 text-slate-700">{intern.field}</td>
-                    <td className="px-5 py-4 text-slate-700">{intern.period}</td>
-                    <td className="px-5 py-4 text-slate-700">{intern.schedule}</td>
-                    <td className="px-5 py-4 text-slate-700">{intern.supervisor}</td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${statusClass(intern.status)}`}>
-                        {intern.status}
+
+                    <td className="px-3 py-2 align-top font-semibold text-slate-800">
+                      {intern.course_name}
+                    </td>
+
+                    <td className="px-3 py-2 align-top font-semibold text-slate-700">
+                      {intern.supervisor_name}
+                    </td>
+
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {formatDate(intern.authorized_start_date)}
+                    </td>
+
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {formatDate(intern.authorized_end_date)}
+                    </td>
+
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {intern.authorized_schedule ?? "-"}
+                    </td>
+
+                    <td className="px-3 py-2 align-top">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${statusClass(
+                          intern.status,
+                        )}`}
+                      >
+                        {statusLabel(intern.status)}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
-                        >
-                          Ver
-                        </button>
 
-                        <button
-                          type="button"
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-amber-300 hover:text-amber-800"
-                        >
-                          Ocorrência
-                        </button>
-
-                        <button
-                          type="button"
-                          className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-teal-800"
-                        >
-                          Relatório
-                        </button>
-                      </div>
+                    <td className="px-3 py-2 align-top text-slate-700">
+                      {intern.notes ? (
+                        <details className="max-w-[220px] text-[11px] text-slate-500">
+                          <summary className="cursor-pointer font-semibold text-slate-600">
+                            Ver observação
+                          </summary>
+                          <p className="mt-1 leading-5">{intern.notes}</p>
+                        </details>
+                      ) : (
+                        "-"
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        )}
 
-          <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs font-medium text-slate-500">
-            No celular, esta tabela terá rolagem horizontal. Na versão com banco
-            de dados, haverá filtros por curso, supervisor, status e período.
-          </div>
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
+          Esta tela é de acompanhamento da unidade. Ocorrências, ajustes e relatório final serão implementados em etapas próprias.
         </div>
-      </section>
-
-      <section className="mt-8 grid gap-5 lg:grid-cols-3">
-        <ActionCard
-          title="Acompanhamento pela unidade"
-          description="A unidade acompanhará frequência prática, atividades, ocorrências e eventuais necessidades de ajuste."
-          status="Fluxo"
-        />
-        <ActionCard
-          title="Supervisor responsável"
-          description="Todo estagiário autorizado deverá estar vinculado a servidor supervisor indicado pela unidade."
-        />
-        <ActionCard
-          title="Encerramento e relatório"
-          description="Ao final, a unidade poderá registrar informações de encerramento e relatório resumido das atividades."
-        />
       </section>
     </SystemShell>
   );
