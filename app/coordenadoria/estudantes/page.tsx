@@ -215,12 +215,12 @@ export default async function CoordenadoriaEstudantesPage() {
 
                     <td className="px-3 py-2 align-top">
                       <div className="flex justify-end">
-                        <button
-                          type="button"
+                        <Link
+                          href={`/coordenadoria/estudantes/${presentation.id}/analise`}
                           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
                         >
                           Analisar
-                        </button>
+                        </Link>
                       </div>
                     </td>
                   </tr>
@@ -238,3 +238,4 @@ export default async function CoordenadoriaEstudantesPage() {
     </SystemShell>
   );
 }
+
