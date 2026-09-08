@@ -191,4 +191,106 @@ export async function createOwnCourse(formData: FormData) {
   }
 
   revalidatePath("/instituicao");
+  revalidatePath("/instituicao/cursos");
+  redirect("/instituicao/cursos?sucesso=1");
+}
+
+async function getInstitutionProfileForCourseWrite() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Usuário não autenticado.");
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, role, institution_id, is_active")
+    .eq("id", user.id)
+    .single();
+
+  if (
+    profileError ||
+    !profile ||
+    !profile.is_active ||
+    profile.role !== "instituicao" ||
+    !profile.institution_id
+  ) {
+    throw new Error("Acesso permitido apenas à instituição ativa.");
+  }
+
+  return { supabase, institutionId: profile.institution_id as string };
+}
+
+export async function updateOwnCourse(formData: FormData) {
+  const { supabase, institutionId } = await getInstitutionProfileForCourseWrite();
+
+  const id = normalizeText(formData.get("id"));
+  const name = normalizeText(formData.get("name"));
+  const level = normalizeText(formData.get("level")) ?? "superior";
+  const workloadRequired = normalizeInteger(formData.get("workload_required"));
+
+  if (!id) {
+    throw new Error("Curso não identificado.");
+  }
+
+  if (!name) {
+    throw new Error("Informe o nome do curso.");
+  }
+
+  if (!allowedCourseLevels.includes(level)) {
+    throw new Error("Nível inválido para o curso.");
+  }
+
+  const { error } = await supabase
+    .from("courses")
+    .update({
+      name,
+      level,
+      workload_required: workloadRequired,
+    })
+    .eq("id", id)
+    .eq("institution_id", institutionId);
+
+  if (error) {
+    throw new Error(`Não foi possível atualizar o curso: ${error.message}`);
+  }
+
+  revalidatePath("/instituicao");
+  revalidatePath("/instituicao/cursos");
+  redirect("/instituicao/cursos?sucesso=2");
+}
+
+export async function toggleOwnCourseStatus(formData: FormData) {
+  const { supabase, institutionId } = await getInstitutionProfileForCourseWrite();
+
+  const id = normalizeText(formData.get("id"));
+  const nextStatus = normalizeText(formData.get("next_status"));
+
+  if (!id) {
+    throw new Error("Curso não identificado.");
+  }
+
+  if (!["ativo", "inativo"].includes(nextStatus ?? "")) {
+    throw new Error("Situação inválida para o curso.");
+  }
+
+  const { error } = await supabase
+    .from("courses")
+    .update({
+      is_active: nextStatus === "ativo",
+    })
+    .eq("id", id)
+    .eq("institution_id", institutionId);
+
+  if (error) {
+    throw new Error(`Não foi possível alterar a situação do curso: ${error.message}`);
+  }
+
+  revalidatePath("/instituicao");
+  revalidatePath("/instituicao/cursos");
+  redirect("/instituicao/cursos?sucesso=3");
 }
