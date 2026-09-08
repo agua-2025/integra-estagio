@@ -97,7 +97,7 @@ function Badge({ status, children }: { status: string; children: React.ReactNode
   );
 }
 
-export default async function UnidadeEstagiarioHistoricoPage({
+export default async function InstituicaoEstudanteHistoricoPage({
   params,
 }: PageProps) {
   const { id } = await params;
@@ -459,12 +459,9 @@ export default async function UnidadeEstagiarioHistoricoPage({
                   Ainda não há relatório final registrado para este estágio.
                 </p>
 
-                <Link
-                  href="/instituicao/estudantes"
-                  className="w-fit rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-teal-800"
-                >
-                  Registrar relatório final
-                </Link>
+                <span className="w-fit rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500">
+                  Aguardando registro pela unidade
+                </span>
               </div>
             )}
           </details>
