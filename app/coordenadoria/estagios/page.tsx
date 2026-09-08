@@ -151,7 +151,7 @@ export default async function CoordenadoriaEstagiosPage({
           )}
         </div>
 
-        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-[190px_240px_220px_220px_1fr_auto]">
+        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <label className="grid gap-1">
             <span className="text-xs font-bold text-slate-600">Situação</span>
             <select
@@ -226,10 +226,10 @@ export default async function CoordenadoriaEstagiosPage({
             />
           </label>
 
-          <div className="flex items-end">
+          <div className="flex items-end justify-end md:col-span-2 xl:col-span-5">
             <button
               type="submit"
-              className="h-10 rounded-lg bg-teal-700 px-4 text-xs font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
+              className="h-10 rounded-lg bg-teal-700 px-5 text-xs font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
             >
               Filtrar
             </button>
