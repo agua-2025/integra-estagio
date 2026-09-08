@@ -47,7 +47,6 @@ const adminNavigation: NavigationItem[] = [
       { label: "Relatórios finais", href: "/coordenadoria/relatorios-finais", Icon: BookOpen },
     ],
   },
-  { label: "Relatórios", href: "/coordenadoria/relatorios", Icon: BookOpen },
 ];
 
 const institutionNavigation: NavigationItem[] = [
@@ -84,9 +83,15 @@ const institutionNavigation: NavigationItem[] = [
 const unitNavigation: NavigationItem[] = [
   { label: "Painel da Unidade", href: "/unidade", Icon: LayoutDashboard },
   { label: "Sondagens Recebidas", href: "/unidade/sondagens", Icon: ClipboardCheck },
-  { label: "Estagiários", href: "/unidade/estagiarios", Icon: GraduationCap },
-  { label: "Ocorrências", href: "/unidade/ocorrencias", Icon: FileText },
-  { label: "Relatórios Finais", href: "/unidade/relatorio-final", Icon: BookOpen },
+  {
+    label: "Acompanhamento",
+    Icon: GraduationCap,
+    children: [
+      { label: "Estagiários", href: "/unidade/estagiarios", Icon: ListChecks },
+      { label: "Ocorrências", href: "/unidade/ocorrencias", Icon: FileText },
+      { label: "Relatórios finais", href: "/unidade/relatorio-final", Icon: BookOpen },
+    ],
+  },
 ];
 
 const studentNavigation: NavigationItem[] = [
