@@ -42,7 +42,9 @@ const adminNavigation: NavigationItem[] = [
     label: "Acompanhamento",
     Icon: ClipboardCheck,
     children: [
+      { label: "Estágios", href: "/coordenadoria/estagios", Icon: GraduationCap },
       { label: "Ocorrências", href: "/coordenadoria/ocorrencias", Icon: ListChecks },
+      { label: "Relatórios finais", href: "/coordenadoria/relatorios-finais", Icon: BookOpen },
     ],
   },
   { label: "Relatórios", href: "/coordenadoria/relatorios", Icon: BookOpen },
