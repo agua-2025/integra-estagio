@@ -13,9 +13,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
+  if (!value) return "-";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -87,6 +85,18 @@ function badgeClass(status: string) {
   return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
 }
 
+function Badge({ status, children }: { status: string; children: React.ReactNode }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${badgeClass(
+        status,
+      )}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 export default async function UnidadeEstagiarioHistoricoPage({
   params,
 }: PageProps) {
@@ -97,13 +107,19 @@ export default async function UnidadeEstagiarioHistoricoPage({
     notFound();
   }
 
+  const pendingOccurrences =
+    detail?.occurrences.filter((item) => item.status === "pendente").length ?? 0;
+
+  const resolvedOccurrences =
+    detail?.occurrences.filter((item) => item.status === "resolvida").length ?? 0;
+
   return (
     <SystemShell
       areaLabel="Unidade Municipal"
       title="Histórico do estágio"
-      description="Consulte os dados do estágio, autorização, ocorrências e relatório final do estudante."
+      description="Consulta consolidada do estágio, autorização, ocorrências e relatório final."
     >
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/unidade/estagiarios"
           className="text-sm font-semibold text-teal-700 hover:text-teal-900"
@@ -112,17 +128,17 @@ export default async function UnidadeEstagiarioHistoricoPage({
         </Link>
 
         {detail && (
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-wrap gap-2">
             <Link
               href="/unidade/ocorrencias"
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
             >
               Ocorrências
             </Link>
 
             <Link
               href={`/unidade/relatorio-final/${detail.id}`}
-              className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
+              className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-teal-800"
             >
               Relatório final
             </Link>
@@ -131,243 +147,244 @@ export default async function UnidadeEstagiarioHistoricoPage({
       </div>
 
       {error && (
-        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <section className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {error}
         </section>
       )}
 
       {detail && (
-        <>
-          <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
                   Estudante
                 </p>
-                <p className="mt-1 text-base font-black text-slate-950">
+                <h2 className="text-lg font-black text-slate-950">
                   {detail.student_name}
-                </p>
+                </h2>
                 <p className="text-xs text-slate-500">
                   {detail.student_email ?? "E-mail não informado"}
                 </p>
               </div>
 
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                  Instituição / Curso
-                </p>
-                <p className="mt-1 text-sm font-bold text-slate-900">
-                  {detail.institution_name}
-                </p>
-                <p className="text-xs text-slate-500">{detail.course_name}</p>
-              </div>
-
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                  Unidade / Supervisor
-                </p>
-                <p className="mt-1 text-sm font-bold text-slate-900">
-                  {detail.municipal_unit_name}
-                </p>
-                <p className="text-xs text-slate-500">{detail.supervisor_name}</p>
-              </div>
-
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                  Situação
-                </p>
-                <span
-                  className={`mt-1 inline-flex rounded-full px-3 py-1 text-xs font-black ${badgeClass(
-                    detail.status,
-                  )}`}
-                >
-                  {internshipStatusLabel(detail.status)}
-                </span>
-              </div>
-            </div>
-          </section>
-
-          <div className="mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                Início
-              </p>
-              <p className="text-sm font-bold text-slate-900">
-                {formatDate(detail.start_date)}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                Término
-              </p>
-              <p className="text-sm font-bold text-slate-900">
-                {formatDate(detail.end_date)}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                Horário
-              </p>
-              <p className="text-sm font-bold text-slate-900">
-                {detail.schedule ?? "-"}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                Ocorrências
-              </p>
-              <p className="text-sm font-bold text-slate-900">
-                {detail.occurrences.length}
-              </p>
+              <Badge status={detail.status}>
+                {internshipStatusLabel(detail.status)}
+              </Badge>
             </div>
           </div>
 
-          <section className="mb-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-              <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-                Autorização de início
-              </h2>
-            </div>
+          <div className="overflow-x-auto border-b border-slate-200">
+            <table className="w-full min-w-[900px] border-collapse text-left text-xs">
+              <tbody>
+                <tr className="border-b border-slate-100">
+                  <th className="w-44 bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                    Instituição
+                  </th>
+                  <td className="px-4 py-2 font-semibold text-slate-900">
+                    {detail.institution_name}
+                  </td>
+
+                  <th className="w-36 bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                    Curso
+                  </th>
+                  <td className="px-4 py-2 font-semibold text-slate-900">
+                    {detail.course_name}
+                  </td>
+                </tr>
+
+                <tr className="border-b border-slate-100">
+                  <th className="bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                    Unidade
+                  </th>
+                  <td className="px-4 py-2 font-semibold text-slate-900">
+                    {detail.municipal_unit_name}
+                  </td>
+
+                  <th className="bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                    Supervisor
+                  </th>
+                  <td className="px-4 py-2 font-semibold text-slate-900">
+                    {detail.supervisor_name}
+                  </td>
+                </tr>
+
+                <tr>
+                  <th className="bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                    Período
+                  </th>
+                  <td className="px-4 py-2 font-semibold text-slate-900">
+                    {formatDate(detail.start_date)} a {formatDate(detail.end_date)}
+                  </td>
+
+                  <th className="bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                    Horário
+                  </th>
+                  <td className="px-4 py-2 font-semibold text-slate-900">
+                    {detail.schedule ?? "-"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="overflow-x-auto border-b border-slate-200">
+            <table className="w-full min-w-[900px] border-collapse text-left text-xs">
+              <thead className="bg-slate-50 uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-2 font-black">Resumo do acompanhamento</th>
+                  <th className="px-4 py-2 font-black">Autorização</th>
+                  <th className="px-4 py-2 font-black">Ocorrências</th>
+                  <th className="px-4 py-2 font-black">Relatório final</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr className="border-t border-slate-100">
+                  <td className="px-4 py-2 font-semibold text-slate-900">
+                    {internshipStatusLabel(detail.status)}
+                  </td>
+
+                  <td className="px-4 py-2 text-slate-700">
+                    {detail.authorization
+                      ? `Emitida em ${formatDate(detail.authorization.created_at)}`
+                      : "Não localizada"}
+                  </td>
+
+                  <td className="px-4 py-2 text-slate-700">
+                    {detail.occurrences.length} registro(s), {pendingOccurrences} pendente(s),{" "}
+                    {resolvedOccurrences} resolvida(s)
+                  </td>
+
+                  <td className="px-4 py-2 text-slate-700">
+                    {detail.final_report
+                      ? `${closingStatusLabel(detail.final_report.closing_status)} • ${
+                          detail.final_report.completed_workload ?? "-"
+                        }h`
+                      : "Pendente"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details className="border-b border-slate-200">
+            <summary className="cursor-pointer bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-700 hover:bg-slate-50">
+              Autorização de início
+            </summary>
 
             {detail.authorization ? (
-              <div className="grid gap-4 p-4 md:grid-cols-4">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Status
-                  </p>
-                  <span
-                    className={`mt-1 inline-flex rounded-full px-3 py-1 text-xs font-black ${badgeClass(
-                      detail.authorization.status,
-                    )}`}
-                  >
-                    {detail.authorization.status === "autorizado"
-                      ? "Autorizado"
-                      : detail.authorization.status}
-                  </span>
-                </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] border-collapse text-left text-xs">
+                  <thead className="bg-slate-50 uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-4 py-2 font-black">Status</th>
+                      <th className="px-4 py-2 font-black">Período autorizado</th>
+                      <th className="px-4 py-2 font-black">Horário</th>
+                      <th className="px-4 py-2 font-black">Emissão</th>
+                      <th className="px-4 py-2 font-black">Observações</th>
+                    </tr>
+                  </thead>
 
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Período autorizado
-                  </p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {formatDate(detail.authorization.authorized_start_date)} a{" "}
-                    {formatDate(detail.authorization.authorized_end_date)}
-                  </p>
-                </div>
+                  <tbody>
+                    <tr className="border-t border-slate-100">
+                      <td className="px-4 py-2 align-top">
+                        <Badge status={detail.authorization.status}>
+                          {detail.authorization.status === "autorizado"
+                            ? "Autorizado"
+                            : detail.authorization.status}
+                        </Badge>
+                      </td>
 
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Horário autorizado
-                  </p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {detail.authorization.authorized_schedule ?? "-"}
-                  </p>
-                </div>
+                      <td className="px-4 py-2 align-top font-semibold text-slate-800">
+                        {formatDate(detail.authorization.authorized_start_date)} a{" "}
+                        {formatDate(detail.authorization.authorized_end_date)}
+                      </td>
 
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Emitida em
-                  </p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {formatDate(detail.authorization.created_at)}
-                  </p>
-                </div>
+                      <td className="px-4 py-2 align-top text-slate-700">
+                        {detail.authorization.authorized_schedule ?? "-"}
+                      </td>
 
-                {detail.authorization.notes && (
-                  <div className="md:col-span-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      Observações da autorização
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-slate-700">
-                      {detail.authorization.notes}
-                    </p>
-                  </div>
-                )}
+                      <td className="px-4 py-2 align-top text-slate-700">
+                        {formatDate(detail.authorization.created_at)}
+                      </td>
+
+                      <td className="px-4 py-2 align-top text-slate-700">
+                        {detail.authorization.notes ?? "-"}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div className="p-4 text-sm text-slate-600">
+              <div className="px-4 py-3 text-sm text-slate-600">
                 Autorização não localizada.
               </div>
             )}
-          </section>
+          </details>
 
-          <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-              <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-                Ocorrências
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Registros lançados pela unidade durante o acompanhamento.
-              </p>
-            </div>
+          <details className="border-b border-slate-200" open>
+            <summary className="cursor-pointer bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-700 hover:bg-slate-50">
+              Ocorrências
+            </summary>
 
             {detail.occurrences.length === 0 ? (
-              <div className="p-4 text-sm text-slate-600">
+              <div className="px-4 py-3 text-sm text-slate-600">
                 Nenhuma ocorrência registrada para este estágio.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[850px] border-collapse text-left text-xs">
-                  <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
+                <table className="w-full min-w-[900px] border-collapse text-left text-xs">
+                  <thead className="bg-slate-50 uppercase tracking-wide text-slate-500">
                     <tr>
-                      <th className="px-3 py-2 font-black">Tipo</th>
-                      <th className="px-3 py-2 font-black">Data</th>
-                      <th className="px-3 py-2 font-black">Status</th>
-                      <th className="px-3 py-2 font-black">Descrição</th>
-                      <th className="px-3 py-2 font-black">Conclusão</th>
+                      <th className="px-4 py-2 font-black">Tipo</th>
+                      <th className="px-4 py-2 font-black">Data</th>
+                      <th className="px-4 py-2 font-black">Status</th>
+                      <th className="px-4 py-2 font-black">Descrição</th>
+                      <th className="px-4 py-2 font-black">Conclusão</th>
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-slate-100">
                     {detail.occurrences.map((occurrence) => (
                       <tr key={occurrence.id} className="hover:bg-slate-50">
-                        <td className="px-3 py-2 align-top font-semibold text-slate-800">
+                        <td className="px-4 py-2 align-top font-semibold text-slate-800">
                           {occurrenceTypeLabel(occurrence.occurrence_type)}
                         </td>
 
-                        <td className="px-3 py-2 align-top text-slate-700">
+                        <td className="px-4 py-2 align-top text-slate-700">
                           {formatDate(occurrence.occurrence_date)}
                         </td>
 
-                        <td className="px-3 py-2 align-top">
-                          <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${badgeClass(
-                              occurrence.status,
-                            )}`}
-                          >
+                        <td className="px-4 py-2 align-top">
+                          <Badge status={occurrence.status}>
                             {occurrenceStatusLabel(occurrence.status)}
-                          </span>
+                          </Badge>
                         </td>
 
-                        <td className="px-3 py-2 align-top text-slate-700">
-                          <details className="max-w-[280px] text-[11px] text-slate-500">
-                            <summary className="cursor-pointer font-semibold text-slate-600">
-                              Ver descrição
+                        <td className="px-4 py-2 align-top text-slate-700">
+                          <details>
+                            <summary className="cursor-pointer font-semibold text-teal-700">
+                              Ver
                             </summary>
-                            <p className="mt-1 leading-5">
+                            <p className="mt-1 max-w-[480px] leading-5">
                               {occurrence.description}
                             </p>
                           </details>
                         </td>
 
-                        <td className="px-3 py-2 align-top text-slate-700">
+                        <td className="px-4 py-2 align-top text-slate-700">
                           {occurrence.resolution_notes ? (
-                            <details className="max-w-[280px] text-[11px] text-slate-500">
-                              <summary className="cursor-pointer font-semibold text-slate-600">
-                                Ver conclusão
+                            <details>
+                              <summary className="cursor-pointer font-semibold text-teal-700">
+                                Ver
                               </summary>
-                              <p className="mt-1 leading-5">
+                              <p className="mt-1 max-w-[480px] leading-5">
                                 {occurrence.resolution_notes}
                               </p>
                             </details>
                           ) : (
-                            <span className="text-[11px] font-semibold text-amber-700">
-                              Pendente
-                            </span>
+                            "Pendente"
                           )}
                         </td>
                       </tr>
@@ -376,87 +393,89 @@ export default async function UnidadeEstagiarioHistoricoPage({
                 </table>
               </div>
             )}
-          </section>
+          </details>
 
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-              <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-                Relatório final
-              </h2>
-            </div>
+          <details open>
+            <summary className="cursor-pointer bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-700 hover:bg-slate-50">
+              Relatório final
+            </summary>
 
             {detail.final_report ? (
-              <div className="p-4">
-                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <span
-                    className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-black ${badgeClass(
-                      detail.final_report.closing_status,
-                    )}`}
-                  >
-                    {closingStatusLabel(detail.final_report.closing_status)}
-                  </span>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] border-collapse text-left text-xs">
+                  <thead className="bg-slate-50 uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-4 py-2 font-black">Situação</th>
+                      <th className="px-4 py-2 font-black">Período realizado</th>
+                      <th className="px-4 py-2 font-black">Carga</th>
+                      <th className="px-4 py-2 font-black">Registro</th>
+                      <th className="px-4 py-2 font-black">Resumo</th>
+                      <th className="px-4 py-2 font-black">Observações</th>
+                    </tr>
+                  </thead>
 
-                  <p className="text-xs font-semibold text-slate-500">
-                    Registrado em {formatDate(detail.final_report.created_at)}
-                  </p>
-                </div>
+                  <tbody>
+                    <tr className="border-t border-slate-100">
+                      <td className="px-4 py-2 align-top">
+                        <Badge status={detail.final_report.closing_status}>
+                          {closingStatusLabel(detail.final_report.closing_status)}
+                        </Badge>
+                      </td>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      Período realizado
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">
-                      {detail.final_report.performed_period}
-                    </p>
-                  </div>
+                      <td className="px-4 py-2 align-top font-semibold text-slate-800">
+                        {detail.final_report.performed_period}
+                      </td>
 
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      Carga cumprida
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">
-                      {detail.final_report.completed_workload ?? "-"}h
-                    </p>
-                  </div>
-                </div>
+                      <td className="px-4 py-2 align-top text-slate-700">
+                        {detail.final_report.completed_workload ?? "-"}h
+                      </td>
 
-                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Resumo das atividades
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {detail.final_report.activities_summary}
-                  </p>
-                </div>
+                      <td className="px-4 py-2 align-top text-slate-700">
+                        {formatDate(detail.final_report.created_at)}
+                      </td>
 
-                {detail.final_report.supervisor_notes && (
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                      Observações do supervisor
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700">
-                      {detail.final_report.supervisor_notes}
-                    </p>
-                  </div>
-                )}
+                      <td className="px-4 py-2 align-top text-slate-700">
+                        <details>
+                          <summary className="cursor-pointer font-semibold text-teal-700">
+                            Ver
+                          </summary>
+                          <p className="mt-1 max-w-[480px] leading-5">
+                            {detail.final_report.activities_summary}
+                          </p>
+                        </details>
+                      </td>
+
+                      <td className="px-4 py-2 align-top text-slate-700">
+                        <details>
+                          <summary className="cursor-pointer font-semibold text-teal-700">
+                            Ver
+                          </summary>
+                          <p className="mt-1 max-w-[480px] leading-5">
+                            {detail.final_report.supervisor_notes ??
+                              "Sem observações."}
+                          </p>
+                        </details>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-600">
                   Ainda não há relatório final registrado para este estágio.
                 </p>
 
                 <Link
                   href={`/unidade/relatorio-final/${detail.id}`}
-                  className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-teal-800"
+                  className="w-fit rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-teal-800"
                 >
                   Registrar relatório final
                 </Link>
               </div>
             )}
-          </section>
-        </>
+          </details>
+        </section>
       )}
     </SystemShell>
   );
