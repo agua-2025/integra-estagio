@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type InstitutionInquiryFilters = {
+  status?: string;
+  courseId?: string;
+  search?: string;
+};
+
 export type InstitutionInquiryProfile = {
   id: string;
   role: string;
@@ -38,7 +44,14 @@ export type InstitutionInquiry = {
   course_name: string;
 };
 
-export async function getInstitutionInquiriesData() {
+function cleanFilter(value?: string) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : undefined;
+}
+
+export async function getInstitutionInquiriesData(
+  filters: InstitutionInquiryFilters = {},
+) {
   const supabase = await createClient();
 
   const {
@@ -82,6 +95,23 @@ export async function getInstitutionInquiriesData() {
     };
   }
 
+  const status = cleanFilter(filters.status);
+  const courseId = cleanFilter(filters.courseId);
+  const search = cleanFilter(filters.search)?.toLowerCase();
+
+  let inquiriesQuery = supabase
+    .from("inquiries")
+    .select(
+      "id, course_id, requested_area, requested_students, required_workload, intended_period, notes, status, created_at, coordination_decision, coordination_approved_students, coordination_notes, coordination_decided_at",
+    )
+    .eq("institution_id", profile.institution_id)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (courseId) {
+    inquiriesQuery = inquiriesQuery.eq("course_id", courseId);
+  }
+
   const [institutionResult, coursesResult, inquiriesResult] = await Promise.all([
     supabase
       .from("institutions")
@@ -93,22 +123,32 @@ export async function getInstitutionInquiriesData() {
       .from("courses")
       .select("id, name, level, workload_required, is_active")
       .eq("institution_id", profile.institution_id)
-      .eq("is_active", true)
       .order("name", { ascending: true }),
 
-    supabase
-      .from("inquiries")
-      .select(
-        "id, course_id, requested_area, requested_students, required_workload, intended_period, notes, status, created_at, coordination_decision, coordination_approved_students, coordination_notes, coordination_decided_at",
-      )
-      .eq("institution_id", profile.institution_id)
-      .order("created_at", { ascending: false }),
+    inquiriesQuery,
   ]);
+
+  const error =
+    institutionResult.error?.message ??
+    coursesResult.error?.message ??
+    inquiriesResult.error?.message ??
+    null;
+
+  if (error) {
+    return {
+      profile: profile as InstitutionInquiryProfile,
+      institution:
+        (institutionResult.data as InstitutionInquiryInstitution | null) ?? null,
+      courses: (coursesResult.data ?? []) as InstitutionInquiryCourse[],
+      inquiries: [] as InstitutionInquiry[],
+      error,
+    };
+  }
 
   const courses = (coursesResult.data ?? []) as InstitutionInquiryCourse[];
   const courseNames = new Map(courses.map((course) => [course.id, course.name]));
 
-  const inquiries = (inquiriesResult.data ?? []).map((inquiry) => ({
+  let inquiries = (inquiriesResult.data ?? []).map((inquiry) => ({
     ...inquiry,
     course_name:
       inquiry.course_id && courseNames.has(inquiry.course_id)
@@ -116,16 +156,66 @@ export async function getInstitutionInquiriesData() {
         : "Curso não identificado",
   })) as InstitutionInquiry[];
 
+  if (status === "em_analise") {
+    inquiries = inquiries.filter((item) =>
+      [
+        "recebida",
+        "em_analise",
+        "encaminhada",
+        "encaminhada_unidade",
+        "aguardando_unidade",
+        "pendente",
+      ].includes(item.status),
+    );
+  }
+
+  if (status === "viavel") {
+    inquiries = inquiries.filter((item) =>
+      ["viavel", "viavel_parcial", "parcialmente_viavel"].includes(item.status),
+    );
+  }
+
+  if (status === "sem_disponibilidade") {
+    inquiries = inquiries.filter((item) =>
+      ["sem_disponibilidade", "inviavel"].includes(item.status),
+    );
+  }
+
+  if (status === "complementacao") {
+    inquiries = inquiries.filter(
+      (item) =>
+        item.status === "complementacao_solicitada" ||
+        item.coordination_decision === "precisa_complementacao",
+    );
+  }
+
+  if (status === "concluida") {
+    inquiries = inquiries.filter((item) => Boolean(item.coordination_decision));
+  }
+
+  if (search) {
+    inquiries = inquiries.filter((item) => {
+      const text = [
+        item.course_name,
+        item.requested_area,
+        item.intended_period,
+        item.notes,
+        item.coordination_notes,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return text.includes(search);
+    });
+  }
+
   return {
     profile: profile as InstitutionInquiryProfile,
     institution:
       (institutionResult.data as InstitutionInquiryInstitution | null) ?? null,
     courses,
     inquiries,
-    error:
-      institutionResult.error?.message ??
-      coursesResult.error?.message ??
-      inquiriesResult.error?.message ??
-      null,
+    error: null,
   };
 }
