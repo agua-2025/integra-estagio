@@ -230,21 +230,57 @@ export default function CoordenadoriaAreaPage() {
           </Link>
 
           <Link
-            href="/coordenadoria/relatorios"
+            href="/coordenadoria/estagios"
             className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
           >
             <div className="flex items-start justify-between gap-4">
               <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Relatórios e auditoria
+                Acompanhar estágios
               </h3>
               <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Gestão
+                Histórico
               </span>
             </div>
 
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Acompanhe indicadores, pendências, movimentações, histórico e
-              auditoria do fluxo de estágio.
+              Consulte estágios em andamento ou encerrados, com unidade, supervisor,
+              ocorrências e relatório final.
+            </p>
+          </Link>
+
+          <Link
+            href="/coordenadoria/ocorrencias"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Ocorrências
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Controle
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Acompanhe registros feitos pelas unidades durante a execução dos estágios.
+            </p>
+          </Link>
+
+          <Link
+            href="/coordenadoria/relatorios-finais"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
+                Relatórios finais
+              </h3>
+              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+                Encerramento
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Consulte relatórios registrados pelas unidades ao final dos estágios.
             </p>
           </Link>
 
