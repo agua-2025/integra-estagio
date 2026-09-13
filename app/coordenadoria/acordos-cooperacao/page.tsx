@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getCoordinationAgreementsData } from "@/lib/queries/coordination-agreements";
-import {
-  cancelCoordinationAgreementEdit,
-  updateCoordinationAgreement,
-} from "./actions";
+import { updateCoordinationAgreement } from "./actions";
 import { CoordinationAgreementCreateForm } from "./CoordinationAgreementCreateForm";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +12,7 @@ type AcordosCooperacaoPageProps = {
     sucesso?: string;
     status?: string;
     instituicao?: string;
+    editar?: string;
   }>;
 };
 
@@ -79,18 +77,37 @@ function hasFilters(params: Awaited<AcordosCooperacaoPageProps["searchParams"]>)
   return Boolean(params?.status || params?.instituicao);
 }
 
+function buildEditHref(id: string, params: Awaited<AcordosCooperacaoPageProps["searchParams"]>) {
+  const query = new URLSearchParams();
+
+  if (params?.status) query.set("status", params.status);
+  if (params?.instituicao) query.set("instituicao", params.instituicao);
+
+  query.set("editar", id);
+
+  return `/coordenadoria/acordos-cooperacao?${query.toString()}#editar-acordo`;
+}
+
 export default async function AcordosCooperacaoPage({
   searchParams,
 }: AcordosCooperacaoPageProps) {
   const params = await searchParams;
 
-  const { agreements, institutions, viableInquiries, viableInstitutions, viableCourses, error } =
-    await getCoordinationAgreementsData({
-      status: params?.status,
-      institutionId: params?.instituicao,
-    });
+  const {
+    agreements,
+    institutions,
+    viableInquiries,
+    viableInstitutions,
+    viableCourses,
+    error,
+  } = await getCoordinationAgreementsData({
+    status: params?.status,
+    institutionId: params?.instituicao,
+  });
 
   const filtered = hasFilters(params);
+  const editingAgreement =
+    agreements.find((agreement) => agreement.id === params?.editar) ?? null;
 
   const activeCount = agreements.filter((item) => item.status === "ativo").length;
   const signingCount = agreements.filter((item) =>
@@ -121,26 +138,26 @@ export default async function AcordosCooperacaoPage({
 
         <Link
           href="/coordenadoria/sondagens"
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
         >
           Ver sondagens
         </Link>
       </div>
 
       {params?.sucesso === "1" && (
-        <section className="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+        <section className="mb-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
           Acordo registrado com sucesso.
         </section>
       )}
 
       {params?.sucesso === "2" && (
-        <section className="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+        <section className="mb-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
           Acordo atualizado com sucesso.
         </section>
       )}
 
       {error && (
-        <section className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <section className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {error}
         </section>
       )}
@@ -151,47 +168,45 @@ export default async function AcordosCooperacaoPage({
             <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
               Exibidos
             </p>
-            <p className="text-xl font-black text-slate-950">
-              {agreements.length}
-            </p>
+            <p className="text-lg font-black text-slate-950">{agreements.length}</p>
           </div>
 
           <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
             <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
               Pendentes
             </p>
-            <p className="text-xl font-black text-amber-700">{pendingCount}</p>
+            <p className="text-lg font-black text-amber-700">{pendingCount}</p>
           </div>
 
           <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
             <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
               Assinatura/publicação
             </p>
-            <p className="text-xl font-black text-sky-700">{signingCount}</p>
+            <p className="text-lg font-black text-sky-700">{signingCount}</p>
           </div>
 
           <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
             <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
               Ativos
             </p>
-            <p className="text-xl font-black text-teal-700">{activeCount}</p>
+            <p className="text-lg font-black text-teal-700">{activeCount}</p>
           </div>
 
           <div className="px-4 py-2">
             <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
               Aptos
             </p>
-            <p className="text-xl font-black text-teal-700">{readyCount}</p>
+            <p className="text-lg font-black text-teal-700">{readyCount}</p>
           </div>
         </div>
 
-        <div className="px-4 py-2">
-          <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-2">
+          <div className="mb-2 flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
                 Filtros de consulta
               </h2>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="text-xs text-slate-500">
                 Localize acordos por situação ou instituição.
               </p>
             </div>
@@ -249,33 +264,219 @@ export default async function AcordosCooperacaoPage({
             </div>
           </form>
         </div>
-        <details className="border-t border-slate-200">
-          <summary className="cursor-pointer bg-slate-50 px-4 py-2">
-          <span className="text-sm font-black uppercase tracking-wide text-slate-700">
-            Registrar novo acordo
-          </span>
-          <span className="ml-3 text-xs font-medium text-slate-500">
-            Selecionar instituição e cursos abrangidos
-          </span>
-        </summary>
 
-        {viableInquiries.length === 0 ? (
-          <div className="px-4 py-3 text-sm font-semibold text-slate-600">
-            Nenhuma sondagem viável disponível para novo acordo.
-          </div>
-        ) : (
-          <CoordinationAgreementCreateForm
-            viableInstitutions={viableInstitutions}
-            viableCourses={viableCourses}
-          />
-        )}
+        <details className="border-b border-slate-200">
+          <summary className="cursor-pointer bg-slate-50 px-4 py-2">
+            <span className="text-sm font-black uppercase tracking-wide text-slate-700">
+              Registrar novo acordo
+            </span>
+            <span className="ml-3 text-xs font-medium text-slate-500">
+              Selecionar instituição e cursos abrangidos
+            </span>
+          </summary>
+
+          {viableInquiries.length === 0 ? (
+            <div className="px-4 py-3 text-sm font-semibold text-slate-600">
+              Nenhuma sondagem viável disponível para novo acordo.
+            </div>
+          ) : (
+            <CoordinationAgreementCreateForm
+              viableInstitutions={viableInstitutions}
+              viableCourses={viableCourses}
+            />
+          )}
         </details>
 
-        <div className="border-t border-b border-slate-200 bg-slate-50 px-4 py-2">
+        {editingAgreement && (
+          <div
+            id="editar-acordo"
+            className="border-b border-teal-200 bg-teal-50/60 px-4 py-3"
+          >
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-wide text-teal-900">
+                  Editar acordo
+                </h2>
+                <p className="text-xs text-slate-600">
+                  {editingAgreement.institution_name} · criado em{" "}
+                  {formatDate(editingAgreement.created_at)}
+                </p>
+              </div>
+
+              <Link
+                href="/coordenadoria/acordos-cooperacao"
+                className="text-xs font-black uppercase tracking-wide text-slate-600 hover:text-slate-900"
+              >
+                Cancelar edição
+              </Link>
+            </div>
+
+            <form action={updateCoordinationAgreement} className="grid gap-3">
+              <input type="hidden" name="id" value={editingAgreement.id} />
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">Situação</span>
+                  <select
+                    name="status"
+                    defaultValue={editingAgreement.status}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  >
+                    {statusOptions.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">
+                    Início da vigência
+                  </span>
+                  <input
+                    name="started_at"
+                    type="date"
+                    defaultValue={editingAgreement.started_at ?? ""}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">
+                    Fim da vigência
+                  </span>
+                  <input
+                    name="ended_at"
+                    type="date"
+                    defaultValue={editingAgreement.ended_at ?? ""}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">
+                    Data de assinatura
+                  </span>
+                  <input
+                    name="signed_at"
+                    type="date"
+                    defaultValue={editingAgreement.signed_at ?? ""}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">
+                    Data de publicação
+                  </span>
+                  <input
+                    name="published_at"
+                    type="date"
+                    defaultValue={editingAgreement.published_at ?? ""}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">
+                    Representante legal
+                  </span>
+                  <input
+                    name="legal_representative_name"
+                    defaultValue={editingAgreement.legal_representative_name ?? ""}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">
+                    Responsável da instituição
+                  </span>
+                  <input
+                    name="institution_responsible_name"
+                    defaultValue={editingAgreement.institution_responsible_name ?? ""}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-slate-600">
+                  Referência da publicação
+                </span>
+                <input
+                  name="publication_reference"
+                  defaultValue={editingAgreement.publication_reference ?? ""}
+                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  placeholder="Ex.: Diário Oficial, edição, data ou link da publicação"
+                />
+              </label>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">
+                    Link do documento
+                  </span>
+                  <input
+                    name="document_url"
+                    defaultValue={editingAgreement.document_url ?? ""}
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                    placeholder="Link do acordo assinado ou publicado"
+                  />
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs font-bold text-slate-600">
+                    PDF assinado
+                  </span>
+                  <input
+                    name="document_file"
+                    type="file"
+                    accept="application/pdf"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-teal-800 hover:file:bg-teal-100 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                </label>
+              </div>
+
+              <label className="grid gap-1">
+                <span className="text-xs font-bold text-slate-600">Observações</span>
+                <textarea
+                  name="notes"
+                  rows={2}
+                  defaultValue={editingAgreement.notes ?? ""}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                />
+              </label>
+
+              <div className="flex justify-end gap-2 border-t border-teal-100 pt-3">
+                <Link
+                  href="/coordenadoria/acordos-cooperacao"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                >
+                  Cancelar
+                </Link>
+
+                <button
+                  type="submit"
+                  className="rounded-lg bg-teal-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-teal-800"
+                >
+                  Salvar acordo
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-2">
           <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
             Acordos cadastrados
           </h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="text-xs text-slate-500">
             Controle limitado aos 200 registros mais recentes conforme os filtros aplicados.
           </p>
         </div>
@@ -327,35 +528,36 @@ export default async function AcordosCooperacaoPage({
                       </span>
                     </td>
 
-                    <td className="px-3 py-1.5 font-semibold text-slate-800">
-                      {formatDate(agreement.started_at)} a {formatDate(agreement.ended_at)}
+                    <td className="px-2 py-1.5 font-semibold text-slate-800">
+                      {formatDate(agreement.started_at)} a{" "}
+                      {formatDate(agreement.ended_at)}
                     </td>
 
-                    <td className="px-3 py-1.5 text-slate-700">
+                    <td className="px-2 py-1.5 text-slate-700">
                       {formatDate(agreement.signed_at)}
                     </td>
 
-                    <td className="px-3 py-1.5 text-slate-700">
+                    <td className="px-2 py-1.5 text-slate-700">
                       <p>{formatDate(agreement.published_at)}</p>
                       {agreement.publication_reference && (
                         <details className="mt-1 text-[11px] text-slate-500">
                           <summary className="cursor-pointer font-semibold text-teal-700">
                             Referência
                           </summary>
-                          <p className="mt-1 max-w-[260px] leading-5">
+                          <p className="mt-1 max-w-[220px] leading-5">
                             {agreement.publication_reference}
                           </p>
                         </details>
                       )}
                     </td>
 
-                    <td className="px-3 py-1.5 text-slate-700">
+                    <td className="px-2 py-1.5 text-slate-700">
                       {agreement.course_names.length > 0 ? (
                         <details>
                           <summary className="cursor-pointer font-semibold text-teal-700">
                             {agreement.course_names.length} curso(s)
                           </summary>
-                          <div className="mt-1 flex max-w-[300px] flex-wrap gap-1">
+                          <div className="mt-1 flex max-w-[240px] flex-wrap gap-1">
                             {agreement.course_names.map((course) => (
                               <span
                                 key={course}
@@ -384,178 +586,12 @@ export default async function AcordosCooperacaoPage({
                     </td>
 
                     <td className="px-2 py-1.5 text-right">
-                      <details className="relative">
-                        <summary className="cursor-pointer rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-800">
-                          Editar
-                        </summary>
-
-                        <div className="fixed left-1/2 top-24 z-50 max-h-[calc(100vh-8rem)] w-[min(920px,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 text-left shadow-2xl">
-                          <form action={updateCoordinationAgreement} className="grid gap-3">
-                            <input type="hidden" name="id" value={agreement.id} />
-
-                            <div className="grid gap-3 md:grid-cols-3">
-                              <label className="grid gap-1">
-                                <span className="text-xs font-bold text-slate-600">
-                                  Situação
-                                </span>
-                                <select
-                                  name="status"
-                                  defaultValue={agreement.status}
-                                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                >
-                                  {statusOptions.map(([value, label]) => (
-                                    <option key={value} value={value}>
-                                      {label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-
-                              <label className="grid gap-1">
-                                <span className="text-xs font-bold text-slate-600">
-                                  Início da vigência
-                                </span>
-                                <input
-                                  name="started_at"
-                                  type="date"
-                                  defaultValue={agreement.started_at ?? ""}
-                                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                />
-                              </label>
-
-                              <label className="grid gap-1">
-                                <span className="text-xs font-bold text-slate-600">
-                                  Fim da vigência
-                                </span>
-                                <input
-                                  name="ended_at"
-                                  type="date"
-                                  defaultValue={agreement.ended_at ?? ""}
-                                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                />
-                              </label>
-                            </div>
-
-                            <div className="grid gap-3 md:grid-cols-2">
-                              <label className="grid gap-1">
-                                <span className="text-xs font-bold text-slate-600">
-                                  Data de assinatura
-                                </span>
-                                <input
-                                  name="signed_at"
-                                  type="date"
-                                  defaultValue={agreement.signed_at ?? ""}
-                                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                />
-                              </label>
-
-                              <label className="grid gap-1">
-                                <span className="text-xs font-bold text-slate-600">
-                                  Data de publicação
-                                </span>
-                                <input
-                                  name="published_at"
-                                  type="date"
-                                  defaultValue={agreement.published_at ?? ""}
-                                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                />
-                              </label>
-                            </div>
-
-                            <div className="grid gap-3 md:grid-cols-2">
-                              <label className="grid gap-1">
-                                <span className="text-xs font-bold text-slate-600">
-                                  Representante legal
-                                </span>
-                                <input
-                                  name="legal_representative_name"
-                                  defaultValue={agreement.legal_representative_name ?? ""}
-                                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                />
-                              </label>
-
-                              <label className="grid gap-1">
-                                <span className="text-xs font-bold text-slate-600">
-                                  Responsável da instituição
-                                </span>
-                                <input
-                                  name="institution_responsible_name"
-                                  defaultValue={agreement.institution_responsible_name ?? ""}
-                                  className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                />
-                              </label>
-                            </div>
-
-                            <label className="grid gap-1">
-                              <span className="text-xs font-bold text-slate-600">
-                                Referência da publicação
-                              </span>
-                              <input
-                                name="publication_reference"
-                                defaultValue={agreement.publication_reference ?? ""}
-                                className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                placeholder="Ex.: Diário Oficial, edição, data ou link da publicação"
-                              />
-                            </label>
-
-                            <label className="grid gap-1">
-                              <span className="text-xs font-bold text-slate-600">
-                                Link do documento
-                              </span>
-                              <input
-                                name="document_url"
-                                defaultValue={agreement.document_url ?? ""}
-                                className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                placeholder="Por enquanto, cole aqui o link do acordo assinado ou publicado"
-                              />
-                            </label>
-
-                              <label className="grid gap-1">
-                                <span className="text-xs font-bold text-slate-600">
-                                  PDF assinado
-                                </span>
-                                <input
-                                  name="document_file"
-                                  type="file"
-                                  accept="application/pdf"
-                                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-teal-800 hover:file:bg-teal-100 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                                />
-                                <span className="text-[11px] text-slate-500">
-                                  Envie o PDF somente quando o acordo estiver assinado e pronto para arquivamento.
-                                </span>
-                              </label>
-
-                            <label className="grid gap-1">
-                              <span className="text-xs font-bold text-slate-600">
-                                Observações
-                              </span>
-                              <textarea
-                                name="notes"
-                                rows={3}
-                                defaultValue={agreement.notes ?? ""}
-                                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                              />
-                            </label>
-
-                            <div className="flex justify-end gap-2">
-                              <button
-                                type="submit"
-                                formAction={cancelCoordinationAgreementEdit}
-                                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-black uppercase tracking-wide text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-                              >
-                                Cancelar edição
-                              </button>
-
-                              <button
-                                type="submit"
-                                className="rounded-lg bg-teal-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-teal-800"
-                              >
-                                Salvar acordo
-                              </button>
-                            </div>
-                          </form>
-                        </div>
-                      </details>
+                      <Link
+                        href={buildEditHref(agreement.id, params)}
+                        className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                      >
+                        Editar
+                      </Link>
                     </td>
                   </tr>
                 ))}
