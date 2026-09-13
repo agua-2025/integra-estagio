@@ -30,30 +30,10 @@ export async function createInternshipAuthorization(formData: FormData) {
   const supabase = await createClient();
 
   const presentationId = normalizeText(formData.get("presentation_id"));
-  const supervisorName = normalizeText(formData.get("supervisor_name"));
-  const authorizedStartDate = normalizeText(formData.get("authorized_start_date"));
-  const authorizedEndDate = normalizeText(formData.get("authorized_end_date"));
-  const authorizedSchedule = normalizeText(formData.get("authorized_schedule"));
   const notes = normalizeText(formData.get("notes"));
 
   if (!presentationId) {
     fail("Apresentação não identificada.");
-  }
-
-  if (!supervisorName) {
-    fail("Informe o supervisor responsável.");
-  }
-
-  if (!authorizedStartDate) {
-    fail("Informe a data de início autorizada.");
-  }
-
-  if (!authorizedEndDate) {
-    fail("Informe a data de término autorizada para permitir a conferência do seguro.");
-  }
-
-  if (dateIsAfter(authorizedStartDate, authorizedEndDate)) {
-    fail("A data de início não pode ser posterior à data de término.");
   }
 
   const {
@@ -123,14 +103,6 @@ export async function createInternshipAuthorization(formData: FormData) {
     fail("O acordo de cooperação precisa estar assinado e publicado.");
   }
 
-  if (agreement.started_at && dateIsBefore(authorizedStartDate, agreement.started_at)) {
-    fail("A data de início autorizada não pode ser anterior ao início da vigência do acordo.");
-  }
-
-  if (agreement.ended_at && dateIsAfter(authorizedEndDate, agreement.ended_at)) {
-    fail("A data de término autorizada não pode ultrapassar a vigência do acordo.");
-  }
-
   const { data: commitmentTerm, error: commitmentTermError } = await supabase
     .from("commitment_terms")
     .select(
@@ -188,20 +160,25 @@ export async function createInternshipAuthorization(formData: FormData) {
     fail("Informe no Termo de Compromisso o período do estágio.");
   }
 
-  if (authorizedStartDate !== commitmentTerm.internship_start_date) {
-    fail("A data de início autorizada deve corresponder à data prevista no Termo de Compromisso validado.");
+  if (!commitmentTerm.supervisor_name) {
+    fail("Informe no Termo de Compromisso o supervisor responsável.");
   }
 
-  if (authorizedEndDate !== commitmentTerm.internship_end_date) {
-    fail("A data de término autorizada deve corresponder à data prevista no Termo de Compromisso validado.");
+  const supervisorName = commitmentTerm.supervisor_name;
+  const authorizedStartDate = commitmentTerm.internship_start_date;
+  const authorizedEndDate = commitmentTerm.internship_end_date;
+  const authorizedSchedule = commitmentTerm.internship_schedule;
+
+  if (dateIsAfter(authorizedStartDate, authorizedEndDate)) {
+    fail("A data de início do Termo de Compromisso não pode ser posterior à data de término.");
   }
 
-  if (
-    commitmentTerm.internship_schedule &&
-    authorizedSchedule &&
-    commitmentTerm.internship_schedule.trim() !== authorizedSchedule.trim()
-  ) {
-    fail("O horário autorizado deve corresponder ao horário previsto no Termo de Compromisso validado.");
+  if (agreement.started_at && dateIsBefore(authorizedStartDate, agreement.started_at)) {
+    fail("A data de início do Termo de Compromisso não pode ser anterior ao início da vigência do acordo.");
+  }
+
+  if (agreement.ended_at && dateIsAfter(authorizedEndDate, agreement.ended_at)) {
+    fail("A data de término do Termo de Compromisso não pode ultrapassar a vigência do acordo.");
   }
 
   const presentationWorkload = Number(presentation.required_workload ?? 0);
@@ -297,7 +274,7 @@ export async function createInternshipAuthorization(formData: FormData) {
       supervisor_name: supervisorName,
       authorized_start_date: authorizedStartDate,
       authorized_end_date: authorizedEndDate,
-      authorized_schedule: authorizedSchedule ?? commitmentTerm.internship_schedule,
+      authorized_schedule: authorizedSchedule,
       status: "autorizado",
       authorized_by: userId,
       notes,
@@ -318,7 +295,7 @@ export async function createInternshipAuthorization(formData: FormData) {
     supervisor_name: supervisorName,
     start_date: authorizedStartDate,
     end_date: authorizedEndDate,
-    schedule: authorizedSchedule ?? commitmentTerm.internship_schedule,
+    schedule: authorizedSchedule,
     status: internshipStatusFromStartDate(authorizedStartDate),
   });
 

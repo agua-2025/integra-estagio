@@ -15,6 +15,32 @@ const allowedStatuses = [
   "cancelado",
 ];
 
+const allowedDocumentStatuses = [
+  "pendente",
+  "enviado",
+  "validado",
+  "rejeitado",
+  "substituido",
+];
+
+const allowedCommitmentTermStatuses = [
+  "enviado",
+  "em_analise",
+  "pendente_correcao",
+  "validado",
+  "rejeitado",
+  "substituido",
+  "cancelado",
+];
+
+const requiredDocumentTypes = [
+  "carta_apresentacao",
+  "termo_compromisso",
+  "seguro",
+  "comprovante_matricula",
+  "documento_identificacao",
+];
+
 function normalizeText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
   return text.length > 0 ? text : null;
@@ -62,6 +88,83 @@ async function ensureCoordinationPermission(presentationId: string) {
   return user;
 }
 
+async function ensurePresentationReadyForAuthorization(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  presentationId: string,
+) {
+  const { data: commitmentTerm, error: commitmentTermError } = await supabase
+    .from("commitment_terms")
+    .select(
+      "id, status, term_document_id, insurance_document_id, policy_number, insurance_company, insurance_valid_from, insurance_valid_until, internship_start_date, internship_end_date, required_workload",
+    )
+    .eq("presentation_id", presentationId)
+    .not("status", "in", "(cancelado,substituido)")
+    .maybeSingle();
+
+  if (commitmentTermError) {
+    fail(presentationId, commitmentTermError.message);
+  }
+
+  if (!commitmentTerm) {
+    fail(presentationId, "Registre e valide o Termo de Compromisso antes de avançar a apresentação.");
+  }
+
+  if (commitmentTerm.status !== "validado") {
+    fail(presentationId, "O Termo de Compromisso precisa estar validado.");
+  }
+
+  if (
+    !commitmentTerm.term_document_id ||
+    !commitmentTerm.insurance_document_id ||
+    !commitmentTerm.policy_number ||
+    !commitmentTerm.insurance_company ||
+    !commitmentTerm.insurance_valid_from ||
+    !commitmentTerm.insurance_valid_until ||
+    !commitmentTerm.internship_start_date ||
+    !commitmentTerm.internship_end_date ||
+    !commitmentTerm.required_workload
+  ) {
+    fail(presentationId, "O Termo de Compromisso possui dados obrigatórios incompletos.");
+  }
+
+  const { data: documents, error: documentsError } = await supabase
+    .from("student_documents")
+    .select("id, document_type, status")
+    .eq("presentation_id", presentationId);
+
+  if (documentsError) {
+    fail(presentationId, documentsError.message);
+  }
+
+  for (const documentType of requiredDocumentTypes) {
+    const document = (documents ?? []).find((item) => item.document_type === documentType);
+
+    if (!document) {
+      fail(presentationId, `Documento obrigatório não localizado: ${documentType}.`);
+    }
+
+    if (document.status !== "validado") {
+      fail(presentationId, `Documento obrigatório ainda não validado: ${documentType}.`);
+    }
+  }
+
+  const termDocument = (documents ?? []).find(
+    (item) => item.id === commitmentTerm.term_document_id,
+  );
+
+  const insuranceDocument = (documents ?? []).find(
+    (item) => item.id === commitmentTerm.insurance_document_id,
+  );
+
+  if (!termDocument || termDocument.status !== "validado") {
+    fail(presentationId, "O documento vinculado ao Termo de Compromisso precisa estar validado.");
+  }
+
+  if (!insuranceDocument || insuranceDocument.status !== "validado") {
+    fail(presentationId, "A apólice/seguro vinculada ao Termo de Compromisso precisa estar validada.");
+  }
+}
+
 export async function updateStudentPresentationReview(formData: FormData) {
   const supabase = await createClient();
 
@@ -79,6 +182,10 @@ export async function updateStudentPresentationReview(formData: FormData) {
 
   const user = await ensureCoordinationPermission(presentationId);
 
+  if (["documentos_validados", "apto_para_autorizacao"].includes(status)) {
+    await ensurePresentationReadyForAuthorization(supabase, presentationId);
+  }
+
   const { error } = await supabase
     .from("student_presentations")
     .update({
@@ -93,6 +200,122 @@ export async function updateStudentPresentationReview(formData: FormData) {
   }
 
   revalidatePath("/coordenadoria/estudantes");
+  revalidatePath("/coordenadoria/autorizacoes");
+  revalidatePath(`/coordenadoria/estudantes/${presentationId}/analise`);
+
+  redirect(`/coordenadoria/estudantes/${presentationId}/analise?sucesso=1`);
+}
+
+export async function updateStudentDocumentReview(formData: FormData) {
+  const supabase = await createClient();
+
+  const presentationId = normalizeText(formData.get("presentation_id"));
+  const documentId = normalizeText(formData.get("document_id"));
+  const status = normalizeText(formData.get("status"));
+  const notes = normalizeText(formData.get("notes"));
+
+  if (!presentationId) {
+    redirect("/coordenadoria/estudantes?erro=Apresentação não identificada.");
+  }
+
+  if (!documentId) {
+    fail(presentationId, "Documento não identificado.");
+  }
+
+  if (!status || !allowedDocumentStatuses.includes(status)) {
+    fail(presentationId, "Selecione uma situação válida para o documento.");
+  }
+
+  const user = await ensureCoordinationPermission(presentationId);
+
+  const { data: document, error: documentError } = await supabase
+    .from("student_documents")
+    .select("id, presentation_id")
+    .eq("id", documentId)
+    .single();
+
+  if (documentError || !document) {
+    fail(presentationId, documentError?.message ?? "Documento não encontrado.");
+  }
+
+  if (document.presentation_id !== presentationId) {
+    fail(presentationId, "O documento não pertence a esta apresentação.");
+  }
+
+  const { error } = await supabase
+    .from("student_documents")
+    .update({
+      status,
+      notes,
+      reviewed_by: user.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", documentId);
+
+  if (error) {
+    fail(presentationId, error.message);
+  }
+
+  revalidatePath("/coordenadoria/estudantes");
+  revalidatePath("/coordenadoria/autorizacoes");
+  revalidatePath(`/coordenadoria/estudantes/${presentationId}/analise`);
+
+  redirect(`/coordenadoria/estudantes/${presentationId}/analise?sucesso=1`);
+}
+
+export async function updateCommitmentTermReview(formData: FormData) {
+  const supabase = await createClient();
+
+  const presentationId = normalizeText(formData.get("presentation_id"));
+  const commitmentTermId = normalizeText(formData.get("commitment_term_id"));
+  const status = normalizeText(formData.get("status"));
+  const notes = normalizeText(formData.get("notes"));
+
+  if (!presentationId) {
+    redirect("/coordenadoria/estudantes?erro=Apresentação não identificada.");
+  }
+
+  if (!commitmentTermId) {
+    fail(presentationId, "Termo de Compromisso não identificado.");
+  }
+
+  if (!status || !allowedCommitmentTermStatuses.includes(status)) {
+    fail(presentationId, "Selecione uma situação válida para o Termo de Compromisso.");
+  }
+
+  const user = await ensureCoordinationPermission(presentationId);
+
+  const { data: commitmentTerm, error: commitmentTermError } = await supabase
+    .from("commitment_terms")
+    .select("id, presentation_id")
+    .eq("id", commitmentTermId)
+    .single();
+
+  if (commitmentTermError || !commitmentTerm) {
+    fail(presentationId, commitmentTermError?.message ?? "Termo de Compromisso não encontrado.");
+  }
+
+  if (commitmentTerm.presentation_id !== presentationId) {
+    fail(presentationId, "O Termo de Compromisso não pertence a esta apresentação.");
+  }
+
+  const { error } = await supabase
+    .from("commitment_terms")
+    .update({
+      status,
+      notes,
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", commitmentTermId);
+
+  if (error) {
+    fail(presentationId, error.message);
+  }
+
+  revalidatePath("/coordenadoria/estudantes");
+  revalidatePath("/coordenadoria/autorizacoes");
   revalidatePath(`/coordenadoria/estudantes/${presentationId}/analise`);
 
   redirect(`/coordenadoria/estudantes/${presentationId}/analise?sucesso=1`);
@@ -146,14 +369,14 @@ export async function releaseStudentAccess(formData: FormData) {
     .single();
 
   if (studentError || !student) {
-    fail(presentationId, studentError?.message ?? "Estudante não encontrado.");
+    fail(presentationId, studentError?.message ?? "Estagiário não encontrado.");
   }
 
   if (
     student.institution_id !== presentation.institution_id ||
     student.course_id !== presentation.course_id
   ) {
-    fail(presentationId, "Os dados do estudante não correspondem à apresentação.");
+    fail(presentationId, "Os dados do estagiário não correspondem à apresentação.");
   }
 
   const { data: existingStudentProfile, error: existingStudentProfileError } =
@@ -170,7 +393,7 @@ export async function releaseStudentAccess(formData: FormData) {
   if (existingStudentProfile) {
     fail(
       presentationId,
-      `Este estudante já possui acesso vinculado ao e-mail ${existingStudentProfile.email}.`,
+      `Este estagiário já possui acesso vinculado ao e-mail ${existingStudentProfile.email}.`,
     );
   }
 
