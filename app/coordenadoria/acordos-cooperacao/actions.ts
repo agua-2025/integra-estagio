@@ -93,6 +93,62 @@ async function requireCoordination() {
   return { supabase, profileId: profile.id as string };
 }
 
+
+const AGREEMENT_DOCUMENTS_BUCKET = "agreement-documents";
+
+function isUploadedFile(value: FormDataEntryValue | null): value is File {
+  return value instanceof File && value.size > 0;
+}
+
+function safeFileName(name: string) {
+  const normalized = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return normalized || "acordo-assinado.pdf";
+}
+
+async function uploadAgreementDocument(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  agreementId: string,
+  file: File,
+) {
+  const isPdf =
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+  if (!isPdf) {
+    throw new Error("O documento do acordo deve ser enviado em formato PDF.");
+  }
+
+  const fileName = safeFileName(file.name);
+  const path = `acordos/${agreementId}/${Date.now()}-${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(AGREEMENT_DOCUMENTS_BUCKET)
+    .upload(path, file, {
+      contentType: "application/pdf",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(`Não foi possível enviar o PDF do acordo: ${uploadError.message}`);
+  }
+
+  const { data } = supabase.storage
+    .from(AGREEMENT_DOCUMENTS_BUCKET)
+    .getPublicUrl(path);
+
+  if (!data.publicUrl) {
+    throw new Error("Não foi possível gerar o link público do PDF do acordo.");
+  }
+
+  return data.publicUrl;
+}
+
 export async function createCoordinationAgreement(formData: FormData) {
   const { supabase, profileId } = await requireCoordination();
 
@@ -249,7 +305,16 @@ export async function updateCoordinationAgreement(formData: FormData) {
   const signedAt = normalizeDate(formData.get("signed_at"));
   const publishedAt = normalizeDate(formData.get("published_at"));
   const publicationReference = normalizeText(formData.get("publication_reference"));
-  const documentUrl = normalizeText(formData.get("document_url"));
+  let documentUrl = normalizeText(formData.get("document_url"));
+  const documentFile = formData.get("document_file");
+
+  if (!id) {
+    throw new Error("Acordo não identificado.");
+  }
+
+  if (isUploadedFile(documentFile)) {
+    documentUrl = await uploadAgreementDocument(supabase, id, documentFile);
+  }
   const notes = normalizeText(formData.get("notes"));
 
   if (!id) {

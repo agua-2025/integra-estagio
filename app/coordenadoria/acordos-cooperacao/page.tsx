@@ -513,6 +513,21 @@ export default async function AcordosCooperacaoPage({
                               />
                             </label>
 
+                              <label className="grid gap-1">
+                                <span className="text-xs font-bold text-slate-600">
+                                  PDF assinado
+                                </span>
+                                <input
+                                  name="document_file"
+                                  type="file"
+                                  accept="application/pdf"
+                                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-md file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-teal-800 hover:file:bg-teal-100 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                                />
+                                <span className="text-[11px] text-slate-500">
+                                  Envie o PDF somente quando o acordo estiver assinado e pronto para arquivamento.
+                                </span>
+                              </label>
+
                             <label className="grid gap-1">
                               <span className="text-xs font-bold text-slate-600">
                                 Observações
