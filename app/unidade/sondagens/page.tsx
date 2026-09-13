@@ -10,6 +10,10 @@ type UnidadeSondagensPageProps = {
   searchParams?: Promise<{
     sucesso?: string;
     responder?: string;
+    status?: string;
+    curso?: string;
+    instituicao?: string;
+    busca?: string;
   }>;
 };
 
@@ -59,12 +63,16 @@ export default async function UnidadeSondagensPage({
   searchParams,
 }: UnidadeSondagensPageProps) {
   const params = await searchParams;
-  const { unitName, responses, error } = await getUnitInquiriesData();
+  const { unitName, responses, institutions, courses, error } =
+    await getUnitInquiriesData({
+      status: params?.status,
+      course: params?.curso,
+      institution: params?.instituicao,
+      search: params?.busca,
+    });
 
   const selectedResponse =
-    responses.find((item) => item.id === params?.responder) ??
-    responses.find((item) => item.response_status === "precisa_analise") ??
-    null;
+    responses.find((item) => item.id === params?.responder) ?? null;
 
   const pendingCount = responses.filter(
     (item) => item.response_status === "precisa_analise",
@@ -155,15 +163,94 @@ export default async function UnidadeSondagensPage({
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-wide text-slate-800">
-              Sondagens encaminhadas
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Selecione uma linha para registrar ou alterar a manifestação da unidade.
-            </p>
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-wide text-slate-800">
+                Sondagens encaminhadas
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Filtre e selecione uma linha para registrar ou alterar a manifestação da unidade.
+              </p>
+            </div>
+
+            {(params?.status || params?.curso || params?.instituicao || params?.busca) && (
+              <Link
+                href="/unidade/sondagens"
+                className="text-xs font-black uppercase tracking-wide text-teal-700 hover:text-teal-900"
+              >
+                Limpar filtros
+              </Link>
+            )}
           </div>
+
+          <form className="grid gap-2 md:grid-cols-2 xl:grid-cols-[190px_220px_220px_1fr_auto]">
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-slate-600">Situação</span>
+              <select
+                name="status"
+                defaultValue={params?.status ?? ""}
+                className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              >
+                <option value="">Todas</option>
+                <option value="precisa_analise">Aguardando análise</option>
+                <option value="campo_disponivel">Disponível</option>
+                <option value="campo_com_limite">Com limite</option>
+                <option value="sem_disponibilidade">Sem disponibilidade</option>
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-slate-600">Instituição</span>
+              <select
+                name="instituicao"
+                defaultValue={params?.instituicao ?? ""}
+                className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              >
+                <option value="">Todas</option>
+                {institutions.map((institution) => (
+                  <option key={institution.id} value={institution.id}>
+                    {institution.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-slate-600">Curso</span>
+              <select
+                name="curso"
+                defaultValue={params?.curso ?? ""}
+                className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              >
+                <option value="">Todos</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-slate-600">Busca</span>
+              <input
+                name="busca"
+                defaultValue={params?.busca ?? ""}
+                placeholder="Área, curso ou observação"
+                className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              />
+            </label>
+
+            <div className="flex items-end">
+              <button
+                type="submit"
+                className="h-9 rounded-lg bg-teal-700 px-4 text-xs font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
+              >
+                Filtrar
+              </button>
+            </div>
+          </form>
         </div>
 
         {responses.length === 0 ? (
@@ -172,17 +259,17 @@ export default async function UnidadeSondagensPage({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] border-collapse text-left text-xs">
+            <table className="w-full min-w-[980px] border-collapse text-left text-xs">
               <thead className="bg-slate-100 uppercase tracking-wide text-slate-600">
                 <tr>
-                  <th className="w-[210px] px-3 py-2 font-black">Instituição</th>
-                  <th className="w-[180px] px-3 py-2 font-black">Curso</th>
-                  <th className="w-[230px] px-3 py-2 font-black">Área/Setor</th>
+                  <th className="w-[180px] px-3 py-2 font-black">Instituição</th>
+                  <th className="w-[160px] px-3 py-2 font-black">Curso</th>
+                  <th className="w-[210px] px-3 py-2 font-black">Área/Setor</th>
                   <th className="w-[70px] px-3 py-2 text-center font-black">Qtd.</th>
                   <th className="w-[80px] px-3 py-2 text-center font-black">Carga</th>
                   <th className="w-[120px] px-3 py-2 font-black">Período</th>
-                  <th className="w-[140px] px-3 py-2 font-black">Status</th>
-                  <th className="w-[130px] px-3 py-2 text-right font-black">Ação</th>
+                  <th className="w-[125px] px-3 py-2 font-black">Status</th>
+                  <th className="w-[115px] px-3 py-2 text-right font-black">Ação</th>
                 </tr>
               </thead>
 

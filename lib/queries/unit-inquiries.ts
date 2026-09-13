@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type UnitInquiryFilters = {
+  status?: string;
+  course?: string;
+  institution?: string;
+  search?: string;
+};
+
 export type UnitInquiryResponse = {
   id: string;
   inquiry_id: string;
@@ -20,6 +27,11 @@ export type UnitInquiryResponse = {
   intended_period: string | null;
   inquiry_notes: string | null;
   inquiry_status: string;
+};
+
+export type UnitInquiryOption = {
+  id: string;
+  name: string;
 };
 
 type ResponseRow = {
@@ -58,7 +70,12 @@ type CourseRow = {
   name: string;
 };
 
-export async function getUnitInquiriesData() {
+function cleanFilter(value?: string) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : undefined;
+}
+
+export async function getUnitInquiriesData(filters: UnitInquiryFilters = {}) {
   const supabase = await createClient();
 
   const {
@@ -70,6 +87,8 @@ export async function getUnitInquiriesData() {
     return {
       unitName: null,
       responses: [] as UnitInquiryResponse[],
+      institutions: [] as UnitInquiryOption[],
+      courses: [] as UnitInquiryOption[],
       error: "Usuário não autenticado.",
     };
   }
@@ -84,6 +103,8 @@ export async function getUnitInquiriesData() {
     return {
       unitName: null,
       responses: [] as UnitInquiryResponse[],
+      institutions: [] as UnitInquiryOption[],
+      courses: [] as UnitInquiryOption[],
       error: profileError?.message ?? "Perfil não encontrado ou inativo.",
     };
   }
@@ -92,8 +113,28 @@ export async function getUnitInquiriesData() {
     return {
       unitName: null,
       responses: [] as UnitInquiryResponse[],
+      institutions: [] as UnitInquiryOption[],
+      courses: [] as UnitInquiryOption[],
       error: "Usuário não vinculado a uma unidade municipal.",
     };
+  }
+
+  const status = cleanFilter(filters.status);
+  const courseFilter = cleanFilter(filters.course);
+  const institutionFilter = cleanFilter(filters.institution);
+  const search = cleanFilter(filters.search)?.toLowerCase();
+
+  let responsesQuery = supabase
+    .from("inquiry_unit_responses")
+    .select(
+      "id, inquiry_id, municipal_unit_id, response_status, available_slots, possible_schedule, compatible_activities, supervisor_name, notes, created_at, updated_at",
+    )
+    .eq("municipal_unit_id", profile.municipal_unit_id)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (status) {
+    responsesQuery = responsesQuery.eq("response_status", status);
   }
 
   const [unitResult, responsesResult] = await Promise.all([
@@ -103,19 +144,15 @@ export async function getUnitInquiriesData() {
       .eq("id", profile.municipal_unit_id)
       .single(),
 
-    supabase
-      .from("inquiry_unit_responses")
-      .select(
-        "id, inquiry_id, municipal_unit_id, response_status, available_slots, possible_schedule, compatible_activities, supervisor_name, notes, created_at, updated_at",
-      )
-      .eq("municipal_unit_id", profile.municipal_unit_id)
-      .order("created_at", { ascending: false }),
+    responsesQuery,
   ]);
 
   if (responsesResult.error) {
     return {
       unitName: unitResult.data?.name ?? null,
       responses: [] as UnitInquiryResponse[],
+      institutions: [] as UnitInquiryOption[],
+      courses: [] as UnitInquiryOption[],
       error: responsesResult.error.message,
     };
   }
@@ -140,6 +177,8 @@ export async function getUnitInquiriesData() {
     return {
       unitName: unitResult.data?.name ?? null,
       responses: [] as UnitInquiryResponse[],
+      institutions: [] as UnitInquiryOption[],
+      courses: [] as UnitInquiryOption[],
       error: inquiriesResult.error.message,
     };
   }
@@ -173,17 +212,19 @@ export async function getUnitInquiriesData() {
   ]);
 
   const inquiryById = new Map(inquiries.map((item) => [item.id, item]));
-  const institutionNames = new Map(
-    ((institutionsResult.data ?? []) as InstitutionRow[]).map((item) => [
-      item.id,
-      item.name,
-    ]),
-  );
-  const courseNames = new Map(
-    ((coursesResult.data ?? []) as CourseRow[]).map((item) => [item.id, item.name]),
+
+  const institutions = ((institutionsResult.data ?? []) as InstitutionRow[]).sort(
+    (a, b) => a.name.localeCompare(b.name),
   );
 
-  const responses = responseRows.map((response) => {
+  const courses = ((coursesResult.data ?? []) as CourseRow[]).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
+  const institutionNames = new Map(institutions.map((item) => [item.id, item.name]));
+  const courseNames = new Map(courses.map((item) => [item.id, item.name]));
+
+  let responses = responseRows.map((response) => {
     const inquiry = inquiryById.get(response.inquiry_id);
 
     return {
@@ -202,12 +243,47 @@ export async function getUnitInquiriesData() {
       intended_period: inquiry?.intended_period ?? null,
       inquiry_notes: inquiry?.notes ?? null,
       inquiry_status: inquiry?.status ?? "não informado",
+      course_id: inquiry?.course_id ?? null,
+      institution_id: inquiry?.institution_id ?? null,
     };
-  }) as UnitInquiryResponse[];
+  });
+
+  if (courseFilter) {
+    responses = responses.filter((item) => item.course_id === courseFilter);
+  }
+
+  if (institutionFilter) {
+    responses = responses.filter(
+      (item) => item.institution_id === institutionFilter,
+    );
+  }
+
+  if (search) {
+    responses = responses.filter((item) =>
+      [
+        item.institution_name,
+        item.course_name,
+        item.requested_area,
+        item.intended_period,
+        item.inquiry_notes,
+        item.notes,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(search),
+    );
+  }
+
+  const publicResponses = responses.map(
+    ({ course_id, institution_id, ...item }) => item,
+  ) as UnitInquiryResponse[];
 
   return {
     unitName: unitResult.data?.name ?? null,
-    responses,
+    responses: publicResponses,
+    institutions: institutions.map((item) => ({ id: item.id, name: item.name })),
+    courses: courses.map((item) => ({ id: item.id, name: item.name })),
     error:
       unitResult.error?.message ??
       institutionsResult.error?.message ??
