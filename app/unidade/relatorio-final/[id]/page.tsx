@@ -41,15 +41,16 @@ function internshipStatusLabel(status: string) {
 }
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
+  if (!value) return "-";
+
+  const dateOnly = value.slice(0, 10);
+  const parts = dateOnly.split("-");
+
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
 
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  return value;
 }
 
 function defaultPeriod(startDate: string, endDate: string | null) {
@@ -77,10 +78,10 @@ export default async function UnidadeRelatorioFinalDetalhePage({
   return (
     <SystemShell
       areaLabel="Unidade Municipal"
-      title="Relatório Final do Estágio"
-      description="Registre ou consulte o relatório final vinculado ao estágio selecionado."
+      title="Relatório final"
+      description="Registre ou consulte o encerramento do estágio selecionado."
     >
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/unidade/relatorio-final"
           className="text-sm font-semibold text-teal-700 hover:text-teal-900"
@@ -90,171 +91,169 @@ export default async function UnidadeRelatorioFinalDetalhePage({
 
         <Link
           href="/unidade/estagiarios"
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
         >
           Ver estagiários
         </Link>
       </div>
 
       {query?.erro && (
-        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <section className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {decodeURIComponent(query.erro)}
         </section>
       )}
 
       {error && (
-        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <section className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {error}
         </section>
       )}
 
       {detail && (
-        <>
-          <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                  Estudante
-                </p>
-                <p className="mt-1 text-base font-black text-slate-950">
-                  {detail.student_name}
-                </p>
-                {detail.student_email && (
-                  <p className="text-xs text-slate-500">{detail.student_email}</p>
-                )}
-              </div>
-
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                  Instituição / Curso
-                </p>
-                <p className="mt-1 text-sm font-bold text-slate-900">
-                  {detail.institution_name}
-                </p>
-                <p className="text-xs text-slate-500">{detail.course_name}</p>
-              </div>
-
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                  Supervisor
-                </p>
-                <p className="mt-1 text-sm font-bold text-slate-900">
-                  {detail.supervisor_name}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {detail.schedule ?? "Horário não informado"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                  Situação do estágio
-                </p>
-                <p className="mt-1 text-sm font-bold text-slate-900">
-                  {internshipStatusLabel(detail.status)}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {formatDate(detail.start_date)} a {formatDate(detail.end_date)}
-                </p>
-              </div>
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="grid gap-0 border-b border-slate-200 md:grid-cols-4">
+            <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
+              <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                Estudante
+              </p>
+              <p className="text-sm font-black text-slate-950">
+                {detail.student_name}
+              </p>
+              {detail.student_email && (
+                <p className="text-[11px] text-slate-500">{detail.student_email}</p>
+              )}
             </div>
-          </section>
+
+            <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
+              <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                Instituição / curso
+              </p>
+              <p className="text-sm font-bold text-slate-900">
+                {detail.institution_name}
+              </p>
+              <p className="text-[11px] text-slate-500">{detail.course_name}</p>
+            </div>
+
+            <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
+              <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                Supervisor
+              </p>
+              <p className="text-sm font-bold text-slate-900">
+                {detail.supervisor_name}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                {detail.schedule ?? "Horário não informado"}
+              </p>
+            </div>
+
+            <div className="px-4 py-2">
+              <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+                Situação
+              </p>
+              <p className="text-sm font-bold text-slate-900">
+                {internshipStatusLabel(detail.status)}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                {formatDate(detail.start_date)} a {formatDate(detail.end_date)}
+              </p>
+            </div>
+          </div>
 
           {detail.report ? (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <>
+              <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
                     Relatório registrado
                   </h2>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="text-xs text-slate-500">
                     Este estágio já possui relatório final.
                   </p>
                 </div>
 
-                <span className="inline-flex rounded-full bg-teal-50 px-3 py-1 text-xs font-black text-teal-800 ring-1 ring-teal-200">
+                <span className="inline-flex w-fit rounded-full bg-teal-50 px-3 py-1 text-xs font-black text-teal-800 ring-1 ring-teal-200">
                   {closingStatusLabel(detail.report.closing_status)}
                 </span>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Período realizado
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-slate-900">
-                    {detail.report.performed_period}
-                  </p>
-                </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[680px] table-fixed border-collapse text-left text-xs">
+                  <tbody className="divide-y divide-slate-100">
+                    <tr>
+                      <th className="w-[160px] bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                        Período realizado
+                      </th>
+                      <td className="px-4 py-2 font-semibold text-slate-800">
+                        {detail.report.performed_period}
+                      </td>
+                      <th className="w-[140px] bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                        Carga cumprida
+                      </th>
+                      <td className="px-4 py-2 font-semibold text-slate-800">
+                        {detail.report.completed_workload ?? "-"}h
+                      </td>
+                    </tr>
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Carga cumprida
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-slate-900">
-                    {detail.report.completed_workload ?? "-"}h
-                  </p>
-                </div>
+                    <tr>
+                      <th className="bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                        Resumo das atividades
+                      </th>
+                      <td className="break-words whitespace-normal px-4 py-2 leading-5 text-slate-700" colSpan={3}>
+                        {detail.report.activities_summary}
+                      </td>
+                    </tr>
+
+                    {detail.report.supervisor_notes && (
+                      <tr>
+                        <th className="bg-slate-50 px-4 py-2 font-black uppercase tracking-wide text-slate-500">
+                          Observações do supervisor
+                        </th>
+                        <td className="break-words whitespace-normal px-4 py-2 leading-5 text-slate-700" colSpan={3}>
+                          {detail.report.supervisor_notes}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                  Resumo das atividades
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-700">
-                  {detail.report.activities_summary}
-                </p>
-              </div>
-
-              {detail.report.supervisor_notes && (
-                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Observações do supervisor
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {detail.report.supervisor_notes}
-                  </p>
-                </div>
-              )}
-            </section>
+            </>
           ) : (
-            <form
-              action={createUnitFinalReport}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
+            <form action={createUnitFinalReport} className="px-4 py-4">
               <input type="hidden" name="internship_id" value={detail.id} />
 
-              <div className="mb-4">
-                <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-                  Registrar relatório final
-                </h2>
-                <p className="mt-1 text-xs text-slate-500">
-                  O relatório final encerrará este estágio no âmbito da unidade municipal.
-                </p>
+              <div className="mb-3 flex flex-col gap-1 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
+                    Registrar relatório final
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    O registro encerrará este estágio no âmbito da unidade.
+                  </p>
+                </div>
               </div>
 
               {!canCreateReport && (
-                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                <section className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
                   Este estágio não está disponível para registro de relatório final.
                 </section>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-1">
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="grid gap-1 md:col-span-1">
                   <span className="text-xs font-bold text-slate-600">
-                    Período efetivamente realizado
+                    Período realizado
                   </span>
                   <input
                     name="performed_period"
                     required
                     defaultValue={defaultPeriod(detail.start_date, detail.end_date)}
-                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                   />
                 </label>
 
                 <label className="grid gap-1">
                   <span className="text-xs font-bold text-slate-600">
-                    Carga horária cumprida
+                    Carga cumprida
                   </span>
                   <input
                     name="completed_workload"
@@ -262,18 +261,18 @@ export default async function UnidadeRelatorioFinalDetalhePage({
                     min="1"
                     required
                     placeholder="Ex.: 80"
-                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                   />
                 </label>
 
-                <label className="grid gap-1 md:col-span-2">
+                <label className="grid gap-1">
                   <span className="text-xs font-bold text-slate-600">
-                    Situação do encerramento
+                    Situação
                   </span>
                   <select
                     name="closing_status"
                     required
-                    className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                   >
                     <option value="">Selecione</option>
                     <option value="concluido">Concluído</option>
@@ -286,44 +285,44 @@ export default async function UnidadeRelatorioFinalDetalhePage({
                   </select>
                 </label>
 
-                <label className="grid gap-1 md:col-span-2">
+                <label className="grid gap-1 md:col-span-3">
                   <span className="text-xs font-bold text-slate-600">
                     Resumo das atividades
                   </span>
                   <textarea
                     name="activities_summary"
-                    rows={6}
+                    rows={3}
                     required
                     placeholder="Descreva as atividades desenvolvidas pelo estudante durante o estágio."
                     className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                   />
                 </label>
 
-                <label className="grid gap-1 md:col-span-2">
+                <label className="grid gap-1 md:col-span-3">
                   <span className="text-xs font-bold text-slate-600">
                     Observações do supervisor
                   </span>
                   <textarea
                     name="supervisor_notes"
-                    rows={4}
+                    rows={2}
                     placeholder="Informe observações, recomendações ou ressalvas, se houver."
                     className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                   />
                 </label>
               </div>
 
-              <div className="mt-5 flex justify-end">
+              <div className="mt-3 flex justify-end border-t border-slate-200 pt-3">
                 <button
                   type="submit"
                   disabled={!canCreateReport}
-                  className="rounded-lg bg-teal-700 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="rounded-lg bg-teal-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   Registrar relatório final
                 </button>
               </div>
             </form>
           )}
-        </>
+        </section>
       )}
     </SystemShell>
   );
