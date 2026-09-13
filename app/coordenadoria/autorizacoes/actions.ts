@@ -18,6 +18,14 @@ function internshipStatusFromStartDate(startDate: string) {
   return startDate <= today ? "em_andamento" : "aguardando_inicio";
 }
 
+function dateIsBefore(left: string, right: string) {
+  return left.slice(0, 10) < right.slice(0, 10);
+}
+
+function dateIsAfter(left: string, right: string) {
+  return left.slice(0, 10) > right.slice(0, 10);
+}
+
 export async function createInternshipAuthorization(formData: FormData) {
   const supabase = await createClient();
 
@@ -38,6 +46,14 @@ export async function createInternshipAuthorization(formData: FormData) {
 
   if (!authorizedStartDate) {
     fail("Informe a data de início autorizada.");
+  }
+
+  if (!authorizedEndDate) {
+    fail("Informe a data de término autorizada para permitir a conferência do seguro.");
+  }
+
+  if (dateIsAfter(authorizedStartDate, authorizedEndDate)) {
+    fail("A data de início não pode ser posterior à data de término.");
   }
 
   const {
@@ -68,7 +84,7 @@ export async function createInternshipAuthorization(formData: FormData) {
   const { data: presentation, error: presentationError } = await supabase
     .from("student_presentations")
     .select(
-      "id, student_id, institution_id, course_id, agreement_id, field_id, municipal_unit_id, status",
+      "id, student_id, institution_id, course_id, agreement_id, field_id, municipal_unit_id, status, required_workload",
     )
     .eq("id", presentationId)
     .single();
@@ -83,6 +99,175 @@ export async function createInternshipAuthorization(formData: FormData) {
     )
   ) {
     fail("A apresentação ainda não está pronta para emissão da autorização.");
+  }
+
+  if (!presentation.municipal_unit_id) {
+    fail("A apresentação não possui unidade municipal definida.");
+  }
+
+  const { data: agreement, error: agreementError } = await supabase
+    .from("cooperation_agreements")
+    .select("id, status, signed_at, published_at, started_at, ended_at")
+    .eq("id", presentation.agreement_id)
+    .single();
+
+  if (agreementError || !agreement) {
+    fail(agreementError?.message ?? "Acordo de cooperação não encontrado.");
+  }
+
+  if (agreement.status !== "ativo") {
+    fail("O acordo de cooperação vinculado não está ativo.");
+  }
+
+  if (!agreement.signed_at || !agreement.published_at) {
+    fail("O acordo de cooperação precisa estar assinado e publicado.");
+  }
+
+  if (agreement.started_at && dateIsBefore(authorizedStartDate, agreement.started_at)) {
+    fail("A data de início autorizada não pode ser anterior ao início da vigência do acordo.");
+  }
+
+  if (agreement.ended_at && dateIsAfter(authorizedEndDate, agreement.ended_at)) {
+    fail("A data de término autorizada não pode ultrapassar a vigência do acordo.");
+  }
+
+  const { data: commitmentTerm, error: commitmentTermError } = await supabase
+    .from("commitment_terms")
+    .select(
+      `
+        id,
+        status,
+        term_document_id,
+        insurance_document_id,
+        policy_number,
+        insurance_company,
+        insurance_valid_from,
+        insurance_valid_until,
+        internship_start_date,
+        internship_end_date,
+        internship_schedule,
+        required_workload,
+        supervisor_name
+      `,
+    )
+    .eq("presentation_id", presentation.id)
+    .neq("status", "cancelado")
+    .neq("status", "substituido")
+    .maybeSingle();
+
+  if (commitmentTermError) {
+    fail(commitmentTermError.message);
+  }
+
+  if (!commitmentTerm) {
+    fail("Registre e valide o Termo de Compromisso antes de emitir a autorização.");
+  }
+
+  if (commitmentTerm.status !== "validado") {
+    fail("O Termo de Compromisso precisa estar validado pela Coordenadoria.");
+  }
+
+  if (!commitmentTerm.term_document_id) {
+    fail("O Termo de Compromisso precisa estar vinculado ao documento correspondente.");
+  }
+
+  if (!commitmentTerm.insurance_document_id) {
+    fail("A apólice/seguro precisa estar vinculada ao Termo de Compromisso.");
+  }
+
+  if (
+    !commitmentTerm.policy_number ||
+    !commitmentTerm.insurance_company ||
+    !commitmentTerm.insurance_valid_from ||
+    !commitmentTerm.insurance_valid_until
+  ) {
+    fail("Informe no Termo de Compromisso os dados completos do seguro: seguradora, apólice e vigência.");
+  }
+
+  if (!commitmentTerm.internship_start_date || !commitmentTerm.internship_end_date) {
+    fail("Informe no Termo de Compromisso o período do estágio.");
+  }
+
+  if (authorizedStartDate !== commitmentTerm.internship_start_date) {
+    fail("A data de início autorizada deve corresponder à data prevista no Termo de Compromisso validado.");
+  }
+
+  if (authorizedEndDate !== commitmentTerm.internship_end_date) {
+    fail("A data de término autorizada deve corresponder à data prevista no Termo de Compromisso validado.");
+  }
+
+  if (
+    commitmentTerm.internship_schedule &&
+    authorizedSchedule &&
+    commitmentTerm.internship_schedule.trim() !== authorizedSchedule.trim()
+  ) {
+    fail("O horário autorizado deve corresponder ao horário previsto no Termo de Compromisso validado.");
+  }
+
+  const presentationWorkload = Number(presentation.required_workload ?? 0);
+  const termWorkload = Number(commitmentTerm.required_workload ?? 0);
+
+  if (presentationWorkload <= 0 || termWorkload <= 0) {
+    fail("A carga horária obrigatória precisa constar na apresentação e no Termo de Compromisso.");
+  }
+
+  if (presentationWorkload !== termWorkload) {
+    fail("A carga horária do Termo de Compromisso deve corresponder à carga horária da apresentação.");
+  }
+
+  if (dateIsAfter(commitmentTerm.insurance_valid_from, authorizedStartDate)) {
+    fail("A vigência do seguro não cobre a data de início do estágio.");
+  }
+
+  if (dateIsBefore(commitmentTerm.insurance_valid_until, authorizedEndDate)) {
+    fail("A vigência do seguro não cobre todo o período do estágio.");
+  }
+
+  const { data: requiredDocuments, error: documentsError } = await supabase
+    .from("student_documents")
+    .select("id, document_type, status")
+    .eq("presentation_id", presentation.id)
+    .in("document_type", [
+      "termo_compromisso",
+      "seguro",
+      "comprovante_matricula",
+      "documento_identificacao",
+    ]);
+
+  if (documentsError) {
+    fail(documentsError.message);
+  }
+
+  const termDocument = requiredDocuments?.find(
+    (document) => document.id === commitmentTerm.term_document_id,
+  );
+
+  const insuranceDocument = requiredDocuments?.find(
+    (document) => document.id === commitmentTerm.insurance_document_id,
+  );
+
+  const enrollmentDocument = requiredDocuments?.find(
+    (document) => document.document_type === "comprovante_matricula",
+  );
+
+  const identificationDocument = requiredDocuments?.find(
+    (document) => document.document_type === "documento_identificacao",
+  );
+
+  if (!termDocument || termDocument.status !== "validado") {
+    fail("O documento do Termo de Compromisso precisa estar validado.");
+  }
+
+  if (!insuranceDocument || insuranceDocument.status !== "validado") {
+    fail("A apólice/seguro precisa estar validada.");
+  }
+
+  if (!enrollmentDocument || enrollmentDocument.status !== "validado") {
+    fail("O comprovante de matrícula precisa estar validado.");
+  }
+
+  if (!identificationDocument || identificationDocument.status !== "validado") {
+    fail("O documento de identificação precisa estar validado.");
   }
 
   const { data: existingAuthorization, error: existingError } = await supabase
@@ -112,7 +297,7 @@ export async function createInternshipAuthorization(formData: FormData) {
       supervisor_name: supervisorName,
       authorized_start_date: authorizedStartDate,
       authorized_end_date: authorizedEndDate,
-      authorized_schedule: authorizedSchedule,
+      authorized_schedule: authorizedSchedule ?? commitmentTerm.internship_schedule,
       status: "autorizado",
       authorized_by: userId,
       notes,
@@ -133,7 +318,7 @@ export async function createInternshipAuthorization(formData: FormData) {
     supervisor_name: supervisorName,
     start_date: authorizedStartDate,
     end_date: authorizedEndDate,
-    schedule: authorizedSchedule,
+    schedule: authorizedSchedule ?? commitmentTerm.internship_schedule,
     status: internshipStatusFromStartDate(authorizedStartDate),
   });
 
@@ -155,8 +340,15 @@ export async function createInternshipAuthorization(formData: FormData) {
 
   revalidatePath("/coordenadoria/autorizacoes");
   revalidatePath("/coordenadoria/estudantes");
+  revalidatePath(`/coordenadoria/estudantes/${presentation.id}/analise`);
+
   revalidatePath("/instituicao/estudantes");
   revalidatePath("/unidade/estagiarios");
+
+  revalidatePath("/estagiario");
+  revalidatePath("/estagiario/estagio");
+  revalidatePath("/estagiario/documentos");
+  revalidatePath("/estagiario/orientacoes");
 
   redirect("/coordenadoria/autorizacoes?sucesso=1");
 }
