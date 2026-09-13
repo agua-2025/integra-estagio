@@ -747,7 +747,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
 
       <div className="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs leading-5 text-slate-500">
-          A Coordenadoria fará a validação formal dos documentos antes da autorização de início.
+          A Coordenadoria conferirá os dados do Termo de Compromisso antes da assinatura e validará os documentos antes da autorização de início.
         </p>
 
         <button
