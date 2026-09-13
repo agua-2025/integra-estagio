@@ -9,6 +9,8 @@ const allowedStatuses = [
   "apresentado",
   "em_analise",
   "pendente_correcao",
+  "apto_para_assinatura",
+  "termo_assinado_anexado",
   "documentos_validados",
   "apto_para_autorizacao",
   "indeferido",

@@ -228,6 +228,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     daily_start_time: "07:00",
     daily_end_time: "12:00",
     break_minutes: "0",
+    internship_type: "obrigatorio",
   });
 
   useEffect(() => {
@@ -271,6 +272,13 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     );
   }, [formValues, selectedDays]);
 
+  const selectedOption = useMemo(
+    () =>
+      options.find((option) => option.key === formValues.authorization_key) ??
+      firstOption,
+    [firstOption, formValues.authorization_key, options],
+  );
+
   const workload = useMemo(
     () =>
       calculateWorkload({
@@ -284,7 +292,9 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     [formValues, selectedDays],
   );
 
-  const requiredWorkload = Number(formValues.required_workload || 0);
+  const requiredWorkload = Number(
+    selectedOption?.required_workload ?? formValues.required_workload ?? 0,
+  );
   const workloadIsEnough =
     requiredWorkload > 0 && workload.maximumHours >= requiredWorkload;
 
@@ -345,10 +355,22 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
       nextValue = maskPhone(value);
     }
 
-    setFormValues((current) => ({
-      ...current,
-      [name]: nextValue,
-    }));
+    setFormValues((current) => {
+      const next = {
+        ...current,
+        [name]: nextValue,
+      };
+
+      if (name === "authorization_key") {
+        const option = options.find((item) => item.key === nextValue);
+
+        next.required_workload = option?.required_workload
+          ? String(option.required_workload)
+          : "";
+      }
+
+      return next;
+    });
   }
 
   function toggleDay(day: string) {
@@ -368,6 +390,54 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     if (formValues.cpf && !isValidCpf(formValues.cpf)) {
       event.preventDefault();
       alert("Informe um CPF válido para o estagiário.");
+      return;
+    }
+
+    if (!formValues.identity_document) {
+      event.preventDefault();
+      alert("Informe o RG/documento de identificação do estagiário.");
+      return;
+    }
+
+    if (!formValues.identity_issuer) {
+      event.preventDefault();
+      alert("Informe o órgão expedidor do documento de identificação.");
+      return;
+    }
+
+    if (!formValues.address) {
+      event.preventDefault();
+      alert("Informe o endereço completo do estagiário.");
+      return;
+    }
+
+    if (!formValues.academic_period) {
+      event.preventDefault();
+      alert("Informe o período/semestre acadêmico do estagiário.");
+      return;
+    }
+
+    if (!formValues.internship_type) {
+      event.preventDefault();
+      alert("Informe o tipo de estágio.");
+      return;
+    }
+
+    if (!formValues.professor_advisor_name) {
+      event.preventDefault();
+      alert("Informe o professor orientador da instituição de ensino.");
+      return;
+    }
+
+    if (!formValues.internship_location) {
+      event.preventDefault();
+      alert("Informe o local/setor previsto para o estágio.");
+      return;
+    }
+
+    if (!formValues.activities_plan) {
+      event.preventDefault();
+      alert("Informe o plano de atividades previsto no Termo de Compromisso.");
       return;
     }
 
@@ -438,6 +508,18 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
       return;
     }
 
+    if (workload.dailyHours > 6) {
+      event.preventDefault();
+      alert("A jornada diária não pode ultrapassar 6 horas.");
+      return;
+    }
+
+    if (workload.weeklyHours > 30) {
+      event.preventDefault();
+      alert("A jornada semanal não pode ultrapassar 30 horas.");
+      return;
+    }
+
     if (!workloadIsEnough) {
       event.preventDefault();
       alert(
@@ -453,7 +535,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
       action={submitStudentPresentation}
       encType="multipart/form-data"
       onSubmit={handleSubmit}
-      className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
     >
       {selectedDays.map((day) => (
         <input key={day} type="hidden" name="weekly_days" value={day} />
@@ -463,16 +545,16 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
       <input type="hidden" name="calculated_weekly_workload" value={workload.weeklyHours.toFixed(2)} />
       <input type="hidden" name="maximum_possible_workload" value={workload.maximumHours.toFixed(2)} />
 
-      <div className="mb-4">
-        <h2 className="text-lg font-black text-slate-950">Dados do estagiário</h2>
-        <p className="mt-1 text-xs text-slate-500">
+      <div className="mb-3">
+        <h2 className="text-base font-semibold text-slate-950">Dados do estagiário</h2>
+        <p className="mt-0.5 text-xs text-slate-500">
           Preencha os dados do estagiário e vincule o Termo de Compromisso ao seguro correspondente.
         </p>
       </div>
 
       {visibleWarnings.length > 0 && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-black">Verifique antes de enviar</p>
+        <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <p className="font-semibold">Verifique antes de enviar</p>
           <ul className="mt-1 list-disc space-y-1 pl-5">
             {visibleWarnings.map((warning) => (
               <li key={warning}>{warning}</li>
@@ -481,10 +563,10 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
         </div>
       )}
 
-      <div className="grid gap-4">
-        <section className="grid gap-3">
-          <label className="grid min-w-0 gap-2">
-            <span className="text-sm font-bold text-slate-700">
+      <div className="grid gap-2">
+        <section className="grid gap-2">
+          <label className="grid min-w-0 gap-1">
+            <span className="text-xs font-medium text-slate-600">
               Sondagem autorizada / unidade municipal
             </span>
             <select
@@ -492,7 +574,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
               required
               value={formValues.authorization_key ?? ""}
               onChange={(event) => updateField("authorization_key", event.target.value)}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs font-medium text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
             >
               {options.map((option) => (
                 <option key={option.key} value={option.key}>
@@ -504,38 +586,95 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <TextInput label="Nome completo" name="full_name" required value={formValues.full_name ?? ""} onChange={updateField} />
-            <TextInput label="CPF" name="cpf" placeholder="000.000.000-00" value={formValues.cpf ?? ""} onChange={updateField} />
+            <TextInput label="CPF" name="cpf" required placeholder="000.000.000-00" value={formValues.cpf ?? ""} onChange={updateField} />
+            <TextInput label="RG/documento de identificação" name="identity_document" required value={formValues.identity_document ?? ""} onChange={updateField} />
+            <TextInput label="Órgão expedidor" name="identity_issuer" required value={formValues.identity_issuer ?? ""} onChange={updateField} />
             <TextInput label="E-mail" name="email" type="email" required value={formValues.email ?? ""} onChange={updateField} />
-            <TextInput label="Telefone" name="phone" placeholder="(00) 00000-0000" value={formValues.phone ?? ""} onChange={updateField} />
-            <TextInput label="Data de nascimento" name="birth_date" type="date" value={formValues.birth_date ?? ""} onChange={updateField} />
+            <TextInput label="Telefone" name="phone" required placeholder="(00) 00000-0000" value={formValues.phone ?? ""} onChange={updateField} />
+            <TextInput label="Data de nascimento" name="birth_date" type="date" required value={formValues.birth_date ?? ""} onChange={updateField} />
             <TextInput label="Matrícula acadêmica" name="academic_registration" required value={formValues.academic_registration ?? ""} onChange={updateField} />
+            <TextInput label="Período/semestre acadêmico" name="academic_period" required placeholder="Ex.: 9º semestre" value={formValues.academic_period ?? ""} onChange={updateField} />
+
+            <label className="grid min-w-0 gap-2 md:col-span-2 xl:col-span-3">
+              <span className="text-xs font-medium text-slate-600">Endereço completo</span>
+              <input
+                name="address"
+                required
+                value={formValues.address ?? ""}
+                onChange={(event) => updateField("address", event.target.value)}
+                placeholder="Rua, número, bairro, cidade/UF"
+                className="h-8 w-full min-w-0 rounded-md border border-slate-300 px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              />
+            </label>
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">
+        <section className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
             Termo de Compromisso
           </h3>
 
-          <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-2 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+            <TextInput label="Nº do termo" name="term_number" value={formValues.term_number ?? ""} onChange={updateField} />
+            <TextInput label="Data de assinatura" name="term_signed_at" type="date" value={formValues.term_signed_at ?? ""} onChange={updateField} />
+
+            <label className="grid min-w-0 gap-1">
+              <span className="text-xs font-medium text-slate-600">Tipo de estágio</span>
+              <select
+                name="internship_type"
+                required
+                value={formValues.internship_type ?? "obrigatorio"}
+                onChange={(event) => updateField("internship_type", event.target.value)}
+                className="h-8 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              >
+                <option value="obrigatorio">Obrigatório</option>
+                <option value="nao_obrigatorio">Não obrigatório</option>
+              </select>
+            </label>
+
             <TextInput label="Início previsto" name="internship_start_date" type="date" required value={formValues.internship_start_date ?? ""} onChange={updateField} />
             <TextInput label="Término previsto" name="internship_end_date" type="date" required value={formValues.internship_end_date ?? ""} onChange={updateField} />
-            <TextInput label="Carga horária obrigatória" name="required_workload" type="number" min="1" required value={formValues.required_workload ?? ""} onChange={updateField} />
+            <TextInput
+              label="Carga horária obrigatória"
+              name="required_workload"
+              type="number"
+              min="1"
+              required
+              readOnly
+              value={selectedOption?.required_workload ? String(selectedOption.required_workload) : ""}
+              onChange={updateField}
+            />
             <TextInput label="Supervisor previsto" name="supervisor_name" required value={formValues.supervisor_name ?? ""} onChange={updateField} />
+            <TextInput label="Professor orientador" name="professor_advisor_name" required value={formValues.professor_advisor_name ?? ""} onChange={updateField} />
+            <TextInput label="E-mail do orientador" name="professor_advisor_email" type="email" value={formValues.professor_advisor_email ?? ""} onChange={updateField} />
+            <TextInput label="Local/setor do estágio" name="internship_location" required value={formValues.internship_location ?? ""} onChange={updateField} />
+
+            <label className="grid min-w-0 gap-2 md:col-span-2 lg:col-span-4">
+              <span className="text-xs font-medium text-slate-600">Plano de atividades</span>
+              <textarea
+                name="activities_plan"
+                required
+                rows={2}
+                value={formValues.activities_plan ?? ""}
+                onChange={(event) => updateField("activities_plan", event.target.value)}
+                placeholder="Descreva as atividades principais previstas no estágio."
+                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              />
+            </label>
           </div>
 
-          <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
-            <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+          <div className="mt-2 rounded-md border border-slate-200 bg-white p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Dias e horários previstos
             </p>
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {weekDays.map((day) => (
                 <button
                   key={day.value}
                   type="button"
                   onClick={() => toggleDay(day.value)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 transition ${
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition ${
                     selectedDays.includes(day.value)
                       ? "bg-teal-600 text-white ring-teal-600"
                       : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50"
@@ -546,18 +685,18 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
               ))}
             </div>
 
-            <div className="mt-3 grid gap-3 md:grid-cols-4">
+            <div className="mt-2 grid gap-2 md:grid-cols-4">
               <TextInput label="Entrada" name="daily_start_time" type="time" required value={formValues.daily_start_time ?? ""} onChange={updateField} />
               <TextInput label="Saída" name="daily_end_time" type="time" required value={formValues.daily_end_time ?? ""} onChange={updateField} />
               <TextInput label="Intervalo em minutos" name="break_minutes" type="number" min="0" value={formValues.break_minutes ?? "0"} onChange={updateField} />
 
-              <div className={`rounded-lg border px-3 py-2 text-xs ${
+              <div className={`rounded-md border px-2 py-1.5 text-xs ${
                 workloadIsEnough
                   ? "border-teal-200 bg-teal-50 text-teal-900"
                   : "border-amber-200 bg-amber-50 text-amber-900"
               }`}>
-                <p className="font-black">Carga estimada</p>
-                <p className="mt-1">
+                <p className="font-semibold">Carga estimada</p>
+                <p className="mt-0.5">
                   {formatDecimal(workload.maximumHours)}h possíveis / {formatDecimal(requiredWorkload)}h obrigatórias
                 </p>
               </div>
@@ -565,12 +704,12 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">
+        <section className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
             Seguro do estagiário
           </h3>
 
-          <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-2 grid gap-2 md:grid-cols-2 lg:grid-cols-4">
             <TextInput label="Seguradora" name="insurance_company" required value={formValues.insurance_company ?? ""} onChange={updateField} />
             <TextInput label="Número da apólice" name="policy_number" required value={formValues.policy_number ?? ""} onChange={updateField} />
             <TextInput label="Início da vigência" name="insurance_valid_from" type="date" required value={formValues.insurance_valid_from ?? ""} onChange={updateField} />
@@ -578,41 +717,42 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <h3 className="text-sm font-black uppercase tracking-wide text-slate-700">
-            Documentos obrigatórios
+        <section className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+            Documentos para conferência
           </h3>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <FileInput label="Carta de apresentação" name="presentation_letter_file" />
-            <FileInput label="Termo de Compromisso" name="commitment_term_file" />
+            <FileInput label="Termo de Compromisso assinado" name="commitment_term_file" />
             <FileInput label="Apólice/seguro" name="insurance_file" />
             <FileInput label="Comprovante de matrícula" name="enrollment_file" />
             <FileInput label="Documento de identificação" name="identification_file" />
+            <FileInput label="Plano de atividades, se houver" name="activities_plan_file" />
           </div>
         </section>
 
-        <label className="grid min-w-0 gap-2">
-          <span className="text-sm font-bold text-slate-700">Observações</span>
+        <label className="grid min-w-0 gap-1">
+          <span className="text-xs font-medium text-slate-600">Observações</span>
           <textarea
             name="notes"
-            rows={3}
+            rows={2}
             value={formValues.notes ?? ""}
             onChange={(event) => updateField("notes", event.target.value)}
             placeholder="Registre informações complementares, se necessário."
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+            className="rounded-md border border-slate-300 px-2 py-1.5 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
           />
         </label>
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs font-semibold leading-5 text-slate-500">
+      <div className="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs leading-5 text-slate-500">
           A Coordenadoria fará a validação formal dos documentos antes da autorização de início.
         </p>
 
         <button
           type="submit"
-          className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-teal-800"
+          className="rounded-md bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-800"
         >
           Enviar para conferência
         </button>
@@ -630,6 +770,7 @@ function TextInput({
   value,
   onChange,
   min,
+  readOnly = false,
 }: {
   label: string;
   name: string;
@@ -639,10 +780,11 @@ function TextInput({
   value: string;
   onChange: (name: string, value: string) => void;
   min?: string;
+  readOnly?: boolean;
 }) {
   return (
-    <label className="grid min-w-0 gap-2">
-      <span className="text-sm font-bold text-slate-700">{label}</span>
+    <label className="grid min-w-0 gap-1">
+      <span className="text-xs font-medium text-slate-600">{label}</span>
       <input
         name={name}
         type={type}
@@ -650,8 +792,11 @@ function TextInput({
         placeholder={placeholder}
         value={value}
         min={min}
+        readOnly={readOnly}
         onChange={(event) => onChange(name, event.target.value)}
-        className="h-10 w-full min-w-0 rounded-lg border border-slate-300 px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+        className={`h-8 w-full min-w-0 rounded-md border border-slate-300 px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100 ${
+          readOnly ? "bg-slate-100 text-slate-600" : ""
+        }`}
       />
     </label>
   );
@@ -659,14 +804,13 @@ function TextInput({
 
 function FileInput({ label, name }: { label: string; name: string }) {
   return (
-    <label className="grid min-w-0 gap-2">
-      <span className="text-sm font-bold text-slate-700">{label}</span>
+    <label className="grid min-w-0 gap-1">
+      <span className="text-xs font-medium text-slate-600">{label}</span>
       <input
         name={name}
         type="file"
         accept="application/pdf,.pdf"
-        required
-        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-teal-800 hover:file:bg-teal-100"
+        className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs file:mr-2 file:rounded-md file:border-0 file:bg-teal-50 file:px-2 file:py-1 file:text-[11px] file:font-medium file:text-teal-800 hover:file:bg-teal-100"
       />
     </label>
   );

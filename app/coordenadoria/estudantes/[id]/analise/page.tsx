@@ -36,6 +36,8 @@ function statusLabel(status: string | null | undefined) {
     apresentado: "Apresentado",
     em_analise: "Em análise",
     pendente_correcao: "Pendente de correção",
+    apto_para_assinatura: "Apto para assinatura",
+    termo_assinado_anexado: "Termo assinado anexado",
     documentos_validados: "Documentos validados",
     apto_para_autorizacao: "Apto para emissão da autorização",
     autorizado: "Autorizado",
@@ -553,6 +555,8 @@ export default async function AnaliseEstagiarioPage({
                   <option value="enviado">Enviado</option>
                   <option value="em_analise">Em análise</option>
                   <option value="pendente_correcao">Pendente de correção</option>
+                    <option value="apto_para_assinatura">Apto para assinatura</option>
+                    <option value="termo_assinado_anexado">Termo assinado anexado</option>
                   <option value="validado">Validado</option>
                   <option value="rejeitado">Rejeitado</option>
                 </select>
@@ -785,6 +789,8 @@ export default async function AnaliseEstagiarioPage({
                 <option value="apresentado">Apresentado</option>
                 <option value="em_analise">Em análise</option>
                 <option value="pendente_correcao">Pendente de correção</option>
+                    <option value="apto_para_assinatura">Apto para assinatura</option>
+                    <option value="termo_assinado_anexado">Termo assinado anexado</option>
                                 <option value="apto_para_autorizacao">Apto para emissão da autorização</option>
                 <option value="indeferido">Indeferido</option>
                 <option value="cancelado">Cancelado</option>

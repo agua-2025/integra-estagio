@@ -149,6 +149,24 @@ function getRequiredPdf(formData: FormData, fieldName: string, label: string) {
   return value;
 }
 
+function getOptionalPdf(formData: FormData, fieldName: string, label: string) {
+  const value = formData.get(fieldName);
+
+  if (!(value instanceof File) || value.size === 0) {
+    return null;
+  }
+
+  if (value.size > MAX_FILE_SIZE) {
+    fail(`O arquivo "${label}" deve ter no máximo 10MB.`);
+  }
+
+  if (value.type && value.type !== "application/pdf") {
+    fail(`O arquivo "${label}" deve estar em PDF.`);
+  }
+
+  return value;
+}
+
 function safeFileName(name: string) {
   return name
     .normalize("NFD")
@@ -251,10 +269,22 @@ export async function submitStudentPresentation(formData: FormData) {
 
   const fullName = normalizeText(formData.get("full_name"));
   const cpf = normalizeCpf(formData.get("cpf"));
+  const identityDocument = normalizeText(formData.get("identity_document"));
+  const identityIssuer = normalizeText(formData.get("identity_issuer"));
   const email = normalizeText(formData.get("email"));
   const phone = normalizeText(formData.get("phone"));
   const birthDate = normalizeText(formData.get("birth_date"));
+  const address = normalizeText(formData.get("address"));
   const academicRegistration = normalizeText(formData.get("academic_registration"));
+  const academicPeriod = normalizeText(formData.get("academic_period"));
+
+  const termNumber = normalizeText(formData.get("term_number"));
+  const termSignedAt = normalizeText(formData.get("term_signed_at"));
+  const internshipType = normalizeText(formData.get("internship_type")) ?? "obrigatorio";
+  const professorAdvisorName = normalizeText(formData.get("professor_advisor_name"));
+  const professorAdvisorEmail = normalizeText(formData.get("professor_advisor_email"));
+  const internshipLocation = normalizeText(formData.get("internship_location"));
+  const activitiesPlan = normalizeText(formData.get("activities_plan"));
 
   const internshipStartDate = normalizeText(formData.get("internship_start_date"));
   const internshipEndDate = normalizeText(formData.get("internship_end_date"));
@@ -294,12 +324,36 @@ export async function submitStudentPresentation(formData: FormData) {
     fail("Informe o nome completo do estagiário.");
   }
 
+  if (!cpf) {
+    fail("Informe o CPF do estagiário.");
+  }
+
+  if (!isValidCpf(cpf)) {
+    fail("Informe um CPF válido para o estagiário.");
+  }
+
+  if (!identityDocument) {
+    fail("Informe o RG/documento de identificação do estagiário.");
+  }
+
+  if (!identityIssuer) {
+    fail("Informe o órgão expedidor do documento de identificação.");
+  }
+
   if (!email) {
     fail("Informe o e-mail do estagiário.");
   }
 
-  if (cpf && !isValidCpf(cpf)) {
-    fail("Informe um CPF válido para o estagiário.");
+  if (!phone) {
+    fail("Informe o telefone do estagiário.");
+  }
+
+  if (!birthDate) {
+    fail("Informe a data de nascimento do estagiário.");
+  }
+
+  if (!address) {
+    fail("Informe o endereço completo do estagiário.");
   }
 
   const todayForBirthDate = new Date().toISOString().slice(0, 10);
@@ -314,6 +368,26 @@ export async function submitStudentPresentation(formData: FormData) {
 
   if (!academicRegistration) {
     fail("Informe a matrícula acadêmica do estagiário.");
+  }
+
+  if (!academicPeriod) {
+    fail("Informe o período/semestre acadêmico do estagiário.");
+  }
+
+  if (!["obrigatorio", "nao_obrigatorio"].includes(internshipType)) {
+    fail("Informe um tipo de estágio válido.");
+  }
+
+  if (!professorAdvisorName) {
+    fail("Informe o professor orientador da instituição de ensino.");
+  }
+
+  if (!internshipLocation) {
+    fail("Informe o local/setor previsto para o estágio.");
+  }
+
+  if (!activitiesPlan) {
+    fail("Informe o plano de atividades previsto no Termo de Compromisso.");
   }
 
   if (!internshipStartDate) {
@@ -342,6 +416,14 @@ export async function submitStudentPresentation(formData: FormData) {
 
   if (!calculatedDailyWorkload || !calculatedWeeklyWorkload || !maximumPossibleWorkload) {
     fail("Não foi possível calcular a carga horária possível no período.");
+  }
+
+  if (calculatedDailyWorkload > 6) {
+    fail("A jornada diária não pode ultrapassar 6 horas.");
+  }
+
+  if (calculatedWeeklyWorkload > 30) {
+    fail("A jornada semanal não pode ultrapassar 30 horas.");
   }
 
   const requiredWorkloadValue = Number(requiredWorkload);
@@ -389,34 +471,40 @@ export async function submitStudentPresentation(formData: FormData) {
     fail("O seguro deve cobrir todo o período previsto para o estágio.");
   }
 
-  const presentationLetterFile = getRequiredPdf(
+  const presentationLetterFile = getOptionalPdf(
     formData,
     "presentation_letter_file",
     "Carta de apresentação",
   );
 
-  const commitmentTermFile = getRequiredPdf(
+  const commitmentTermFile = getOptionalPdf(
     formData,
     "commitment_term_file",
     "Termo de Compromisso",
   );
 
-  const insuranceFile = getRequiredPdf(
+  const insuranceFile = getOptionalPdf(
     formData,
     "insurance_file",
     "Apólice/seguro",
   );
 
-  const enrollmentFile = getRequiredPdf(
+  const enrollmentFile = getOptionalPdf(
     formData,
     "enrollment_file",
     "Comprovante de matrícula",
   );
 
-  const identificationFile = getRequiredPdf(
+  const identificationFile = getOptionalPdf(
     formData,
     "identification_file",
     "Documento de identificação",
+  );
+
+  const activitiesPlanFile = getOptionalPdf(
+    formData,
+    "activities_plan_file",
+    "Plano de atividades",
   );
 
   const { data: inquiry, error: inquiryError } = await supabase
@@ -448,8 +536,12 @@ export async function submitStudentPresentation(formData: FormData) {
 
   const inquiryWorkload = Number(inquiry.required_workload ?? 0);
 
-  if (inquiryWorkload > 0 && inquiryWorkload !== requiredWorkloadValue) {
-    fail("A carga horária informada deve corresponder à carga horária autorizada na sondagem.");
+  if (inquiryWorkload <= 0) {
+    fail("A sondagem selecionada não possui carga horária autorizada.");
+  }
+
+  if (inquiryWorkload !== requiredWorkloadValue) {
+    fail("A carga horária deve corresponder à carga horária autorizada na sondagem.");
   }
 
   const { data: agreement, error: agreementError } = await supabase
@@ -559,9 +651,13 @@ export async function submitStudentPresentation(formData: FormData) {
         .from("students")
         .update({
           full_name: fullName,
+          cpf,
+          identity_document: identityDocument,
+          identity_issuer: identityIssuer,
           email,
           phone,
           birth_date: birthDate,
+          address,
           academic_registration: academicRegistration,
         })
         .eq("id", studentId);
@@ -578,9 +674,12 @@ export async function submitStudentPresentation(formData: FormData) {
       .insert({
         full_name: fullName,
         cpf,
+        identity_document: identityDocument,
+        identity_issuer: identityIssuer,
         email,
         phone,
         birth_date: birthDate,
+        address,
         institution_id: profile.institution_id,
         course_id: courseId,
         academic_registration: academicRegistration,
@@ -619,45 +718,65 @@ export async function submitStudentPresentation(formData: FormData) {
 
   const presentationId = presentation.id as string;
 
-  const presentationLetterDocumentId = await uploadStudentDocument({
-    supabase,
-    file: presentationLetterFile,
-    presentationId,
-    documentType: "carta_apresentacao",
-    uploadedBy: userId,
-  });
+  const presentationLetterDocumentId = presentationLetterFile
+    ? await uploadStudentDocument({
+        supabase,
+        file: presentationLetterFile,
+        presentationId,
+        documentType: "carta_apresentacao",
+        uploadedBy: userId,
+      })
+    : null;
 
-  await uploadStudentDocument({
-    supabase,
-    file: enrollmentFile,
-    presentationId,
-    documentType: "comprovante_matricula",
-    uploadedBy: userId,
-  });
+  if (enrollmentFile) {
+    await uploadStudentDocument({
+      supabase,
+      file: enrollmentFile,
+      presentationId,
+      documentType: "comprovante_matricula",
+      uploadedBy: userId,
+    });
+  }
 
-  await uploadStudentDocument({
-    supabase,
-    file: identificationFile,
-    presentationId,
-    documentType: "documento_identificacao",
-    uploadedBy: userId,
-  });
+  if (identificationFile) {
+    await uploadStudentDocument({
+      supabase,
+      file: identificationFile,
+      presentationId,
+      documentType: "documento_identificacao",
+      uploadedBy: userId,
+    });
+  }
 
-  const termDocumentId = await uploadStudentDocument({
-    supabase,
-    file: commitmentTermFile,
-    presentationId,
-    documentType: "termo_compromisso",
-    uploadedBy: userId,
-  });
+  if (activitiesPlanFile) {
+    await uploadStudentDocument({
+      supabase,
+      file: activitiesPlanFile,
+      presentationId,
+      documentType: "plano_atividades",
+      uploadedBy: userId,
+    });
+  }
 
-  const insuranceDocumentId = await uploadStudentDocument({
-    supabase,
-    file: insuranceFile,
-    presentationId,
-    documentType: "seguro",
-    uploadedBy: userId,
-  });
+  const termDocumentId = commitmentTermFile
+    ? await uploadStudentDocument({
+        supabase,
+        file: commitmentTermFile,
+        presentationId,
+        documentType: "termo_compromisso",
+        uploadedBy: userId,
+      })
+    : null;
+
+  const insuranceDocumentId = insuranceFile
+    ? await uploadStudentDocument({
+        supabase,
+        file: insuranceFile,
+        presentationId,
+        documentType: "seguro",
+        uploadedBy: userId,
+      })
+    : null;
 
   const { error: commitmentTermError } = await supabase
     .from("commitment_terms")
@@ -671,6 +790,14 @@ export async function submitStudentPresentation(formData: FormData) {
       term_document_id: termDocumentId,
       insurance_document_id: insuranceDocumentId,
       status: "enviado",
+      term_number: termNumber,
+      term_signed_at: termSignedAt,
+      internship_type: internshipType,
+      academic_period: academicPeriod,
+      professor_advisor_name: professorAdvisorName,
+      professor_advisor_email: professorAdvisorEmail,
+      internship_location: internshipLocation,
+      activities_plan: activitiesPlan,
       policy_number: policyNumber,
       insurance_company: insuranceCompany,
       insurance_valid_from: insuranceValidFrom,
@@ -687,9 +814,11 @@ export async function submitStudentPresentation(formData: FormData) {
       weekly_workload: calculatedWeeklyWorkload,
       maximum_possible_workload: maximumPossibleWorkload,
       supervisor_name: supervisorName,
-      notes: notes
-        ? `${notes}\n\nCarta de apresentação: ${presentationLetterDocumentId}`
-        : `Carta de apresentação: ${presentationLetterDocumentId}`,
+      notes: presentationLetterDocumentId
+        ? notes
+          ? `${notes}\n\nCarta de apresentação: ${presentationLetterDocumentId}`
+          : `Carta de apresentação: ${presentationLetterDocumentId}`
+        : notes,
       submitted_by: userId,
       submitted_at: new Date().toISOString(),
     });

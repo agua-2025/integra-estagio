@@ -29,6 +29,8 @@ function statusLabel(status: string | null | undefined) {
     enviado: "Enviado",
     em_analise: "Em análise",
     pendente_correcao: "Pendente de correção",
+    apto_para_assinatura: "Apto para assinatura",
+    termo_assinado_anexado: "Termo assinado anexado",
     rejeitado: "Rejeitado",
   };
 
