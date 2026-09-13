@@ -10,6 +10,8 @@ const allowedClosingStatuses = [
   "encerrado_antecipadamente",
 ];
 
+const regularClosingStatuses = ["concluido", "concluido_com_observacao"];
+
 function normalizeText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
   return text.length > 0 ? text : null;
@@ -96,7 +98,7 @@ export async function createUnitFinalReport(formData: FormData) {
 
   const { data: internship, error: internshipError } = await supabase
     .from("internships")
-    .select("id, student_id, municipal_unit_id, supervisor_name, status")
+    .select("id, authorization_id, student_id, municipal_unit_id, supervisor_name, status")
     .eq("id", internshipId)
     .single();
 
@@ -110,6 +112,53 @@ export async function createUnitFinalReport(formData: FormData) {
 
   if (!["em_andamento", "suspenso"].includes(internship.status)) {
     fail("Somente estágios em andamento ou suspensos podem receber relatório final.");
+  }
+
+  const { data: authorization, error: authorizationError } = await supabase
+    .from("internship_authorizations")
+    .select("id, presentation_id, student_id")
+    .eq("id", internship.authorization_id)
+    .single();
+
+  if (authorizationError || !authorization) {
+    fail(authorizationError?.message ?? "Autorização do estágio não encontrada.");
+  }
+
+  if (authorization.student_id !== internship.student_id) {
+    fail("A autorização não corresponde ao estagiário vinculado ao estágio.");
+  }
+
+  const { data: presentation, error: presentationError } = await supabase
+    .from("student_presentations")
+    .select("id, student_id, required_workload")
+    .eq("id", authorization.presentation_id)
+    .single();
+
+  if (presentationError || !presentation) {
+    fail(presentationError?.message ?? "Apresentação do estagiário não encontrada.");
+  }
+
+  if (presentation.student_id !== internship.student_id) {
+    fail("A apresentação não corresponde ao estagiário vinculado ao estágio.");
+  }
+
+  const requiredWorkload = Number(presentation.required_workload ?? 0);
+
+  if (requiredWorkload <= 0) {
+    fail("A carga horária obrigatória da apresentação não foi localizada.");
+  }
+
+  if (
+    regularClosingStatuses.includes(closingStatus) &&
+    completedWorkload < requiredWorkload
+  ) {
+    fail(
+      `Não é possível concluir regularmente o estágio com ${completedWorkload}h cumpridas de ${requiredWorkload}h obrigatórias. Para carga inferior, utilize encerramento antecipado ou mantenha o estágio em andamento.`,
+    );
+  }
+
+  if (closingStatus === "encerrado_antecipadamente" && !supervisorNotes) {
+    fail("Informe nas observações o motivo do encerramento antecipado.");
   }
 
   const { data: existingReport, error: existingError } = await supabase
@@ -157,7 +206,20 @@ export async function createUnitFinalReport(formData: FormData) {
 
   revalidatePath("/unidade/relatorio-final");
   revalidatePath("/unidade/estagiarios");
+  revalidatePath(`/unidade/estagiarios/${internship.id}`);
+
+  revalidatePath("/coordenadoria/estagios");
+  revalidatePath(`/coordenadoria/estagios/${internship.id}`);
+  revalidatePath("/coordenadoria/relatorios-finais");
   revalidatePath("/coordenadoria/ocorrencias");
+
+  revalidatePath("/instituicao/estudantes");
+  revalidatePath(`/instituicao/estudantes/${internship.id}`);
+
+  revalidatePath("/estagiario");
+  revalidatePath("/estagiario/estagio");
+  revalidatePath("/estagiario/documentos");
+  revalidatePath("/estagiario/orientacoes");
 
   redirect("/unidade/relatorio-final?sucesso=1");
 }
