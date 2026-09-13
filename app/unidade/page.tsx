@@ -1,36 +1,34 @@
 import Link from "next/link";
-import { ActionCard } from "@/components/system/ActionCard";
-import { SummaryCard } from "@/components/system/SummaryCard";
 import { SystemShell } from "@/components/system/SystemShell";
 
-const summaries = [
+const modules = [
   {
-    label: "Sondagens",
-    value: "0",
-    description: "Solicitações aguardando manifestação da unidade.",
-  },
-  {
-    label: "Campos",
-    value: "0",
-    description: "Campos de estágio informados pela unidade.",
-  },
-  {
-    label: "Estudantes",
-    value: "0",
-    description: "Estagiários autorizados para acompanhamento.",
-  },
-];
-
-const actions = [
-  {
-    title: "Definir campo de estágio",
+    title: "Sondagens recebidas",
+    href: "/unidade/sondagens",
+    tag: "Prioridade",
     description:
-      "Indique local, horários, quantidade possível, atividades compatíveis e limitações da unidade.",
+      "Responder consultas encaminhadas pela Coordenadoria, informando disponibilidade, quantidade possível, horário, supervisor e atividades compatíveis.",
   },
   {
-    title: "Indicar supervisor",
+    title: "Estagiários",
+    href: "/unidade/estagiarios",
+    tag: "Acompanhamento",
     description:
-      "Informe o servidor responsável pela orientação e acompanhamento do estudante na unidade.",
+      "Consultar estudantes autorizados para a unidade, com curso, instituição, período, horário e supervisor responsável.",
+  },
+  {
+    title: "Ocorrências",
+    href: "/unidade/ocorrencias",
+    tag: "Registro",
+    description:
+      "Registrar e acompanhar faltas, atrasos, ajustes de horário, alteração de supervisor ou outras intercorrências durante o estágio.",
+  },
+  {
+    title: "Relatórios finais",
+    href: "/unidade/relatorio-final",
+    tag: "Encerramento",
+    description:
+      "Registrar informações de encerramento, carga cumprida, atividades realizadas e observações finais do supervisor.",
   },
 ];
 
@@ -38,102 +36,109 @@ export default function UnidadeAreaPage() {
   return (
     <SystemShell
       areaLabel="Área da Unidade Municipal"
-      title="Campo, supervisão e acompanhamento"
-      description="Ambiente das unidades municipais para informar disponibilidade, indicar supervisores e acompanhar estudantes autorizados."
+      title="Painel da Unidade"
+      description="Acompanhe sondagens, estagiários autorizados, ocorrências e relatórios finais."
     >
-      <div className="grid gap-5 md:grid-cols-3">
-        {summaries.map((item) => (
-          <SummaryCard key={item.label} {...item} />
-        ))}
-      </div>
+      <section className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="grid gap-0 md:grid-cols-4">
+          <div className="border-b border-slate-100 px-4 py-3 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Sondagens
+            </p>
+            <p className="mt-1 text-sm font-bold text-slate-950">
+              Responder disponibilidade
+            </p>
+          </div>
 
-      <section className="mt-8">
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-            Atividades da unidade
+          <div className="border-b border-slate-100 px-4 py-3 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Estagiários
+            </p>
+            <p className="mt-1 text-sm font-bold text-slate-950">
+              Acompanhar autorizados
+            </p>
+          </div>
+
+          <div className="border-b border-slate-100 px-4 py-3 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Ocorrências
+            </p>
+            <p className="mt-1 text-sm font-bold text-slate-950">
+              Registrar intercorrências
+            </p>
+          </div>
+
+          <div className="px-4 py-3">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Relatórios
+            </p>
+            <p className="mt-1 text-sm font-bold text-slate-950">
+              Encerrar estágios
+            </p>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600">
+          A unidade participa do fluxo informando viabilidade, acompanhando estudantes e registrando o encerramento do estágio.
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
+            Módulos da unidade
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            A unidade participa informando viabilidade, supervisor e
-            acompanhamento.
+          <p className="mt-1 text-xs text-slate-500">
+            Acesse rapidamente as etapas de responsabilidade da unidade municipal.
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <Link
-            href="/unidade/sondagens"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Responder sondagens
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Prioridade
-              </span>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Informe se a unidade possui condições de receber estudantes para
-              determinado curso e período.
-            </p>
-          </Link>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[850px] border-collapse text-left text-xs">
+            <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-2 font-black">Módulo</th>
+                <th className="px-4 py-2 font-black">Finalidade</th>
+                <th className="px-4 py-2 font-black">Tipo</th>
+                <th className="px-4 py-2 text-right font-black">Ação</th>
+              </tr>
+            </thead>
 
-          <Link
-            href="/unidade/estagiarios"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Acompanhar estudantes
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Supervisão
-              </span>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Consulte estudantes autorizados, supervisores, horários, período,
-              ocorrências e encerramentos.
-            </p>
-          </Link>
+            <tbody className="divide-y divide-slate-100">
+              {modules.map((module) => (
+                <tr key={module.href} className="hover:bg-slate-50">
+                  <td className="px-4 py-2 align-top">
+                    <p className="font-black text-slate-950">{module.title}</p>
+                  </td>
 
-          <Link
-            href="/unidade/ocorrencias"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Registrar ocorrências
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Registro
-              </span>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Comunique faltas, ajustes, intercorrências, necessidade de
-              alteração ou encerramento antecipado.
-            </p>
-          </Link>
+                  <td className="px-4 py-2 align-top text-slate-700">
+                    {module.description}
+                  </td>
 
-          <Link
-            href="/unidade/relatorio-final"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Relatório final
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Encerramento
-              </span>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Registre informações para encerramento, atividades desenvolvidas e
-              avaliação resumida.
-            </p>
-          </Link>
+                  <td className="px-4 py-2 align-top">
+                    <span className="inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-bold text-teal-700">
+                      {module.tag}
+                    </span>
+                  </td>
 
-          {actions.map((item) => (
-            <ActionCard key={item.title} {...item} />
-          ))}
+                  <td className="px-4 py-2 align-top">
+                    <div className="flex justify-end">
+                      <Link
+                        href={module.href}
+                        className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-teal-800"
+                      >
+                        Acessar
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
+          Os dados exibidos nos módulos respeitam o vínculo da unidade municipal do usuário logado.
         </div>
       </section>
     </SystemShell>
