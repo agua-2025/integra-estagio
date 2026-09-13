@@ -56,15 +56,16 @@ function statusClass(status: string | null) {
 }
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
+  if (!value) return "-";
+
+  const dateOnly = value.slice(0, 10);
+  const parts = dateOnly.split("-");
+
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
 
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  return value;
 }
 
 function hasFilters(params: Awaited<PageProps["searchParams"]>) {
@@ -93,10 +94,10 @@ export default async function UnidadeRelatorioFinalPage({
   return (
     <SystemShell
       areaLabel="Unidade Municipal"
-      title="Relatórios Finais"
-      description="Acompanhe os estágios da unidade e registre o relatório final de encerramento quando necessário."
+      title="Relatórios finais"
+      description="Registre e consulte o encerramento dos estágios da unidade."
     >
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/unidade"
           className="text-sm font-semibold text-teal-700 hover:text-teal-900"
@@ -106,149 +107,140 @@ export default async function UnidadeRelatorioFinalPage({
 
         <Link
           href="/unidade/estagiarios"
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
         >
           Ver estagiários
         </Link>
       </div>
 
       {params?.sucesso === "1" && (
-        <section className="mb-5 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+        <section className="mb-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
           Relatório final registrado com sucesso.
         </section>
       )}
 
       {params?.erro && (
-        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <section className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {decodeURIComponent(params.erro)}
         </section>
       )}
 
       {error && (
-        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <section className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {error}
         </section>
       )}
 
-      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-          Unidade municipal
-        </p>
-        <p className="mt-1 text-lg font-black text-slate-950">
-          {unit?.name ?? "Unidade não identificada"}
-        </p>
-      </section>
-
-      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-              Filtros de consulta
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Localize o estágio antes de registrar ou consultar o relatório final.
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="grid gap-0 border-b border-slate-200 md:grid-cols-5">
+          <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Unidade
+            </p>
+            <p className="text-sm font-black text-slate-950">
+              {unit?.name ?? "Unidade não identificada"}
             </p>
           </div>
 
-          {filtered && (
-            <Link
-              href="/unidade/relatorio-final"
-              className="text-xs font-black uppercase tracking-wide text-teal-700 hover:text-teal-900"
-            >
-              Limpar filtros
-            </Link>
-          )}
-        </div>
-
-        <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-[220px_260px_1fr_auto]">
-          <label className="grid gap-1">
-            <span className="text-xs font-bold text-slate-600">Situação</span>
-            <select
-              name="status"
-              defaultValue={params?.status ?? ""}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            >
-              <option value="">Todos</option>
-              <option value="pendente">Pendente de relatório</option>
-              <option value="finalizado">Relatório registrado</option>
-            </select>
-          </label>
-
-          <label className="grid gap-1">
-            <span className="text-xs font-bold text-slate-600">Curso</span>
-            <select
-              name="curso"
-              defaultValue={params?.curso ?? ""}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            >
-              <option value="">Todos</option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="grid gap-1">
-            <span className="text-xs font-bold text-slate-600">Estudante</span>
-            <input
-              name="estudante"
-              defaultValue={params?.estudante ?? ""}
-              placeholder="Buscar por nome"
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            />
-          </label>
-
-          <div className="flex items-end">
-            <button
-              type="submit"
-              className="h-10 rounded-lg bg-teal-700 px-4 text-xs font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
-            >
-              Filtrar
-            </button>
+          <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Exibidos
+            </p>
+            <p className="text-lg font-black text-slate-950">{exibidos}</p>
           </div>
-        </form>
-      </section>
 
-      <div className="mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-4">
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-            Exibidos
-          </p>
-          <p className="text-xl font-black text-slate-950">{exibidos}</p>
+          <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Pendentes
+            </p>
+            <p className="text-lg font-black text-amber-700">{pendentes}</p>
+          </div>
+
+          <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Finalizados
+            </p>
+            <p className="text-lg font-black text-teal-700">{finalizados}</p>
+          </div>
+
+          <div className="px-4 py-2">
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">
+              Com observação
+            </p>
+            <p className="text-lg font-black text-sky-700">{comObservacao}</p>
+          </div>
         </div>
 
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-            Pendentes
-          </p>
-          <p className="text-xl font-black text-amber-700">{pendentes}</p>
-        </div>
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-2">
+          <div className="mb-2 flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
+                Estágios e relatórios finais
+              </h2>
+              <p className="text-xs text-slate-500">
+                Filtre o estágio antes de registrar ou consultar o relatório final.
+              </p>
+            </div>
 
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-            Finalizados
-          </p>
-          <p className="text-xl font-black text-teal-700">{finalizados}</p>
-        </div>
+            {filtered && (
+              <Link
+                href="/unidade/relatorio-final"
+                className="text-xs font-black uppercase tracking-wide text-teal-700 hover:text-teal-900"
+              >
+                Limpar filtros
+              </Link>
+            )}
+          </div>
 
-        <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-            Com observação
-          </p>
-          <p className="text-xl font-black text-sky-700">{comObservacao}</p>
-        </div>
-      </div>
+          <form className="grid gap-2 md:grid-cols-2 xl:grid-cols-[190px_240px_1fr_auto]">
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-slate-600">Situação</span>
+              <select
+                name="status"
+                defaultValue={params?.status ?? ""}
+                className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              >
+                <option value="">Todos</option>
+                <option value="pendente">Pendente de relatório</option>
+                <option value="finalizado">Relatório registrado</option>
+              </select>
+            </label>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-          <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-            Estágios e relatórios finais
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Consulta limitada aos 200 estágios mais recentes da unidade conforme os filtros aplicados.
-          </p>
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-slate-600">Curso</span>
+              <select
+                name="curso"
+                defaultValue={params?.curso ?? ""}
+                className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              >
+                <option value="">Todos</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-xs font-bold text-slate-600">Estudante</span>
+              <input
+                name="estudante"
+                defaultValue={params?.estudante ?? ""}
+                placeholder="Nome do estudante"
+                className="h-8 rounded-lg border border-slate-300 bg-white px-3 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              />
+            </label>
+
+            <div className="flex items-end">
+              <button
+                type="submit"
+                className="h-8 rounded-lg bg-teal-700 px-4 text-xs font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
+              >
+                Filtrar
+              </button>
+            </div>
+          </form>
         </div>
 
         {rows.length === 0 ? (
@@ -257,7 +249,7 @@ export default async function UnidadeRelatorioFinalPage({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] border-collapse text-left text-xs">
+            <table className="w-full min-w-[980px] border-collapse text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-3 py-2 font-black">Estudante</th>
@@ -344,8 +336,8 @@ export default async function UnidadeRelatorioFinalPage({
           </div>
         )}
 
-        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
-          O relatório final é registrado em página individual do estágio, evitando formulários extensos e listas difíceis de usar.
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium text-slate-500">
+          O relatório final é registrado em página individual do estágio, evitando formulários extensos nesta listagem.
         </div>
       </section>
     </SystemShell>

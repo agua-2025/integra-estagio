@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type UnitOccurrenceFilters = {
+  status?: string;
+  type?: string;
+  student?: string;
+};
+
 export type UnitOccurrenceInternOption = {
   id: string;
   student_name: string;
@@ -21,7 +27,14 @@ export type UnitOccurrenceRow = {
   created_at: string;
 };
 
-export async function getUnitOccurrencesData() {
+function cleanFilter(value?: string) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : undefined;
+}
+
+export async function getUnitOccurrencesData(
+  filters: UnitOccurrenceFilters = {},
+) {
   const supabase = await createClient();
 
   const {
@@ -62,6 +75,10 @@ export async function getUnitOccurrencesData() {
     };
   }
 
+  const status = cleanFilter(filters.status);
+  const type = cleanFilter(filters.type);
+  const student = cleanFilter(filters.student)?.toLowerCase();
+
   const { data: unit, error: unitError } = await supabase
     .from("municipal_units")
     .select("id, name, responsible_name")
@@ -84,11 +101,23 @@ export async function getUnitOccurrencesData() {
     .in("status", ["aguardando_inicio", "em_andamento", "suspenso"])
     .order("created_at", { ascending: false });
 
-  const { data: occurrencesData, error: occurrencesError } = await supabase
+  let occurrencesQuery = supabase
     .from("internship_occurrences")
     .select("id, internship_id, authorization_id, student_id, institution_id, course_id, occurrence_type, occurrence_date, description, status, resolution_notes, created_at")
     .eq("municipal_unit_id", profile.municipal_unit_id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (status) {
+    occurrencesQuery = occurrencesQuery.eq("status", status);
+  }
+
+  if (type) {
+    occurrencesQuery = occurrencesQuery.eq("occurrence_type", type);
+  }
+
+  const { data: occurrencesData, error: occurrencesError } =
+    await occurrencesQuery;
 
   const baseError = internshipsError?.message ?? occurrencesError?.message ?? null;
 
@@ -105,24 +134,30 @@ export async function getUnitOccurrencesData() {
   const occurrences = occurrencesData ?? [];
 
   const studentIds = Array.from(
-    new Set([
-      ...internships.map((item) => item.student_id),
-      ...occurrences.map((item) => item.student_id),
-    ].filter(Boolean)),
+    new Set(
+      [
+        ...internships.map((item) => item.student_id),
+        ...occurrences.map((item) => item.student_id),
+      ].filter(Boolean),
+    ),
   ) as string[];
 
   const institutionIds = Array.from(
-    new Set([
-      ...internships.map((item) => item.institution_id),
-      ...occurrences.map((item) => item.institution_id),
-    ].filter(Boolean)),
+    new Set(
+      [
+        ...internships.map((item) => item.institution_id),
+        ...occurrences.map((item) => item.institution_id),
+      ].filter(Boolean),
+    ),
   ) as string[];
 
   const courseIds = Array.from(
-    new Set([
-      ...internships.map((item) => item.course_id),
-      ...occurrences.map((item) => item.course_id),
-    ].filter(Boolean)),
+    new Set(
+      [
+        ...internships.map((item) => item.course_id),
+        ...occurrences.map((item) => item.course_id),
+      ].filter(Boolean),
+    ),
   ) as string[];
 
   const [studentsResult, institutionsResult, coursesResult] = await Promise.all([
@@ -154,23 +189,35 @@ export async function getUnitOccurrencesData() {
     };
   }
 
-  const students = new Map((studentsResult.data ?? []).map((item) => [item.id, item]));
-  const institutions = new Map((institutionsResult.data ?? []).map((item) => [item.id, item]));
-  const courses = new Map((coursesResult.data ?? []).map((item) => [item.id, item]));
+  const students = new Map(
+    (studentsResult.data ?? []).map((item) => [item.id, item]),
+  );
+  const institutions = new Map(
+    (institutionsResult.data ?? []).map((item) => [item.id, item]),
+  );
+  const courses = new Map(
+    (coursesResult.data ?? []).map((item) => [item.id, item]),
+  );
 
   const internOptions = internships.map((item) => ({
     id: item.id,
-    student_name: students.get(item.student_id)?.full_name ?? "Estudante não identificado",
+    student_name:
+      students.get(item.student_id)?.full_name ?? "Estudante não identificado",
     course_name: courses.get(item.course_id)?.name ?? "Curso não identificado",
-    institution_name: institutions.get(item.institution_id)?.name ?? "Instituição não identificada",
+    institution_name:
+      institutions.get(item.institution_id)?.name ??
+      "Instituição não identificada",
     supervisor_name: item.supervisor_name,
   })) as UnitOccurrenceInternOption[];
 
-  const occurrenceRows = occurrences.map((item) => ({
+  let occurrenceRows = occurrences.map((item) => ({
     id: item.id,
-    student_name: students.get(item.student_id)?.full_name ?? "Estudante não identificado",
+    student_name:
+      students.get(item.student_id)?.full_name ?? "Estudante não identificado",
     course_name: courses.get(item.course_id)?.name ?? "Curso não identificado",
-    institution_name: institutions.get(item.institution_id)?.name ?? "Instituição não identificada",
+    institution_name:
+      institutions.get(item.institution_id)?.name ??
+      "Instituição não identificada",
     occurrence_type: item.occurrence_type,
     occurrence_date: item.occurrence_date,
     description: item.description,
@@ -178,6 +225,16 @@ export async function getUnitOccurrencesData() {
     resolution_notes: item.resolution_notes,
     created_at: item.created_at,
   })) as UnitOccurrenceRow[];
+
+  if (student) {
+    occurrenceRows = occurrenceRows.filter((item) =>
+      [item.student_name, item.course_name, item.institution_name, item.description]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(student),
+    );
+  }
 
   return {
     unit,
