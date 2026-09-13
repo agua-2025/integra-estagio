@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SystemShell } from "@/components/system/SystemShell";
+import { ConfirmSubmitButton } from "@/components/system/ConfirmSubmitButton";
 import { createInternshipAuthorization } from "./actions";
 import { getCoordinationAuthorizationsData } from "@/lib/queries/coordination-authorizations";
 
@@ -280,12 +281,12 @@ export default async function CoordenadoriaAutorizacoesPage({
                           />
                         </label>
 
-                        <button
-                          type="submit"
+                        <ConfirmSubmitButton
+                          message="Atenção: a emissão da autorização liberará formalmente o início do estágio com base no Termo de Compromisso validado. Confirma a emissão?"
                           className="rounded-md bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
                         >
                           Emitir autorização
-                        </button>
+                        </ConfirmSubmitButton>
                       </form>
                     ) : (
                       <div className="text-sm leading-6 text-amber-800">
