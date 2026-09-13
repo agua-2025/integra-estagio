@@ -36,7 +36,7 @@ const adminNavigation: NavigationItem[] = [
   { label: "Unidades Municipais", href: "/coordenadoria/unidades", Icon: Landmark },
   { label: "Sondagens", href: "/coordenadoria/sondagens", Icon: ClipboardCheck },
   { label: "Acordos de Cooperação", href: "/coordenadoria/acordos-cooperacao", Icon: FileText },
-  { label: "Estudantes", href: "/coordenadoria/estudantes", Icon: Users },
+  { label: "Estagiários", href: "/coordenadoria/estudantes", Icon: Users },
   { label: "Autorizações", href: "/coordenadoria/autorizacoes", Icon: GraduationCap },
   {
     label: "Acompanhamento",
@@ -74,8 +74,8 @@ const institutionNavigation: NavigationItem[] = [
     label: "Estudantes",
     Icon: GraduationCap,
     children: [
-      { label: "Acompanhar estudantes", href: "/instituicao/estudantes", Icon: ListChecks },
-      { label: "Apresentar estudante", href: "/instituicao/apresentar-estudante", Icon: PlusCircle },
+      { label: "Acompanhar estagiários", href: "/instituicao/estudantes", Icon: ListChecks },
+      { label: "Apresentar estagiário", href: "/instituicao/apresentar-estudante", Icon: PlusCircle },
     ],
   },
 ];
@@ -291,22 +291,22 @@ export async function SystemShell({
 
         <section className="min-w-0">
           <header className="border-b border-slate-200 bg-white">
-            <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 md:flex-row md:items-center md:justify-between lg:py-6">
+            <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between lg:py-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-teal-700 sm:text-sm">
                   {areaLabel}
                 </p>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
                   {title}
                 </h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
                   {description}
                 </p>
               </div>
             </div>
           </header>
 
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:py-5">
             {children}
           </div>
         </section>

@@ -2,15 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SystemShell } from "@/components/system/SystemShell";
 import { createClient } from "@/lib/supabase/server";
-import { updateStudentPresentationReview } from "../../actions";
+import { releaseStudentAccess, updateStudentPresentationReview } from "../../actions";
 
 type PageProps = {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
   searchParams?: Promise<{
     sucesso?: string;
     erro?: string;
+    acesso?: string;
   }>;
 };
 
@@ -24,16 +23,13 @@ function statusLabel(status: string) {
     em_analise: "Em análise",
     pendente_correcao: "Pendente de correção",
     documentos_validados: "Documentos validados",
-    apto_para_autorizacao: "Pronto para emissão da autorização",
+    apto_para_autorizacao: "Pronto para autorização",
     autorizado: "Autorizado",
     indeferido: "Indeferido",
     cancelado: "Cancelado",
     viavel: "Viável",
     viavel_parcial: "Viável parcial",
     parcialmente_viavel: "Parcialmente viável",
-    sem_disponibilidade: "Sem disponibilidade",
-    precisa_complementacao: "Precisa complementação",
-    complementacao_solicitada: "Complementação solicitada",
     ativo: "Ativo",
   };
 
@@ -57,26 +53,24 @@ function statusClass(status: string) {
 }
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
+  if (!value) return "-";
+
+  const dateOnly = value.slice(0, 10);
+  const parts = dateOnly.split("-");
+
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
 
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  return value;
 }
 
 function formatNumber(value: number | null) {
-  if (value === null || value === undefined) {
-    return "-";
-  }
-
+  if (value === null || value === undefined) return "-";
   return new Intl.NumberFormat("pt-BR").format(value);
 }
 
-export default async function AnaliseEstudantePage({
+export default async function AnaliseEstagiarioPage({
   params,
   searchParams,
 }: PageProps) {
@@ -122,6 +116,7 @@ export default async function AnaliseEstudantePage({
     unitResult,
     agreementResult,
     inquiryResult,
+    studentAccessResult,
   ] = await Promise.all([
     supabase
       .from("students")
@@ -162,6 +157,12 @@ export default async function AnaliseEstudantePage({
           .eq("id", presentation.inquiry_id)
           .single()
       : { data: null, error: null },
+
+    supabase
+      .from("profiles")
+      .select("id, full_name, email, is_active")
+      .eq("student_id", presentation.student_id)
+      .maybeSingle(),
   ]);
 
   const student = studentResult.data;
@@ -170,209 +171,366 @@ export default async function AnaliseEstudantePage({
   const unit = unitResult.data;
   const agreement = agreementResult.data;
   const inquiry = inquiryResult.data;
+  const studentAccess = studentAccessResult.data;
 
   return (
     <SystemShell
       areaLabel="Coordenadoria"
-      title="Análise do estudante"
-      description="Confira os dados apresentados pela instituição e registre a situação da análise."
+      title="Análise do estagiário"
+      description="Confira os dados da apresentação, registre a análise e gerencie o acesso individual."
     >
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/coordenadoria/estudantes"
-          className="text-sm font-semibold text-teal-700 hover:text-teal-900"
+          className="text-sm font-medium text-teal-700 hover:text-teal-900"
         >
-          Voltar para estudantes
+          Voltar para estagiários
         </Link>
 
         <Link
           href="/coordenadoria/autorizacoes"
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
         >
           Ver autorizações
         </Link>
       </div>
 
       {query?.sucesso === "1" && (
-        <section className="mb-5 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
-          Análise atualizada com sucesso.
-        </section>
+        <Alert type="success" text="Análise atualizada com sucesso." />
+      )}
+
+      {query?.acesso === "1" && (
+        <Alert type="success" text="Acesso do estagiário liberado com sucesso." />
       )}
 
       {query?.erro && (
-        <section className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {decodeURIComponent(query.erro)}
-        </section>
+        <Alert type="error" text={decodeURIComponent(query.erro)} />
       )}
 
-      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wide text-slate-500">
-              Estudante
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="grid border-b border-slate-200 md:grid-cols-[1.5fr_0.8fr_1fr_0.8fr]">
+          <HeaderCell
+            label="Estagiário"
+            value={student?.full_name ?? "Não identificado"}
+            subvalue={student?.email ?? "E-mail não informado"}
+          />
+
+          <div className="border-b border-slate-100 px-4 py-2.5 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              Situação
             </p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950">
-              {student?.full_name ?? "Estudante não identificado"}
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              {student?.email ?? "E-mail não informado"}
-            </p>
-          </div>
-
-          <span
-            className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${statusClass(
-              presentation.status,
-            )}`}
-          >
-            {statusLabel(presentation.status)}
-          </span>
-        </div>
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="space-y-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-              Dados do estudante
-            </h3>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <Info label="CPF" value={student?.cpf ?? "-"} />
-              <Info label="Telefone" value={student?.phone ?? "-"} />
-              <Info label="Nascimento" value={formatDate(student?.birth_date ?? null)} />
-              <Info label="Matrícula acadêmica" value={student?.academic_registration ?? "-"} />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-              Vínculo da apresentação
-            </h3>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <Info label="Instituição" value={institution?.name ?? "-"} />
-              <Info label="Curso" value={course?.name ?? "-"} />
-              <Info label="Unidade municipal" value={unit?.name ?? "-"} />
-              <Info label="Carga horária" value={`${formatNumber(presentation.required_workload)}h`} />
-              <Info label="Período" value={presentation.intended_period ?? "-"} />
-              <Info label="Horário" value={presentation.intended_schedule ?? "-"} />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-              Sondagem e acordo
-            </h3>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs font-bold uppercase text-slate-500">
-                  Resultado da sondagem
-                </p>
-                <p className="mt-1 font-bold text-slate-900">
-                  {inquiry?.coordination_decision
-                    ? statusLabel(inquiry.coordination_decision)
-                    : inquiry?.status
-                      ? statusLabel(inquiry.status)
-                      : "-"}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Autorizados: {formatNumber(inquiry?.coordination_approved_students ?? null)}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs font-bold uppercase text-slate-500">
-                  Acordo
-                </p>
-                <p className="mt-1 font-bold text-slate-900">
-                  {agreement?.status ? statusLabel(agreement.status) : "-"}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Vigência: {formatDate(agreement?.started_at ?? null)} a{" "}
-                  {formatDate(agreement?.ended_at ?? null)}
-                </p>
-              </div>
-            </div>
-
-            {inquiry?.coordination_notes && (
-              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                <p className="text-xs font-bold uppercase text-slate-500">
-                  Observação da sondagem
-                </p>
-                <p className="mt-1">{inquiry.coordination_notes}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-black uppercase tracking-wide text-slate-600">
-            Registrar análise
-          </h3>
-
-          <form action={updateStudentPresentationReview} className="mt-4 grid gap-4">
-            <input type="hidden" name="presentation_id" value={presentation.id} />
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-700">Situação</span>
-              <select
-                name="status"
-                defaultValue={presentation.status}
-                required
-                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              >
-                <option value="apresentado">Apresentado</option>
-                <option value="em_analise">Em análise</option>
-                <option value="pendente_correcao">Pendente de correção</option>
-                <option value="documentos_validados">Documentos validados</option>
-                <option value="apto_para_autorizacao">Pronto para emissão da autorização</option>
-                <option value="indeferido">Indeferido</option>
-                <option value="cancelado">Cancelado</option>
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-700">
-                Observações da análise
-              </span>
-              <textarea
-                name="review_notes"
-                rows={8}
-                defaultValue={presentation.review_notes ?? ""}
-                placeholder="Registre conferências, pendências, orientações ou justificativas."
-                className="rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              />
-            </label>
-
-            <button
-              type="submit"
-              className="rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-teal-800"
+            <span
+              className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${statusClass(
+                presentation.status,
+              )}`}
             >
-              Salvar análise
-            </button>
-          </form>
-
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-            <p className="font-black">Atenção</p>
-            <p className="mt-1">
-              A análise da apresentação não autoriza o início do estágio.
-              A autorização somente será emitida em etapa própria, após conferência
-              do Acordo de Cooperação, Termo de Compromisso, plano de atividades,
-              seguro, matrícula e demais documentos exigidos.
-            </p>
+              {statusLabel(presentation.status)}
+            </span>
           </div>
-        </aside>
+
+          <HeaderCell
+            label="Acesso"
+            value={studentAccess ? "Liberado" : "Não liberado"}
+            subvalue={studentAccess?.email ?? "Sem usuário vinculado"}
+          />
+
+          <HeaderCell
+            label="Recebido em"
+            value={formatDate(presentation.created_at)}
+          />
+        </div>
+
+        <div className="grid xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0 border-b border-slate-200 xl:border-b-0 xl:border-r">
+            <table className="w-full border-collapse text-left text-xs">
+              <tbody className="divide-y divide-slate-100">
+                <InfoPair
+                  leftLabel="CPF"
+                  leftValue={student?.cpf ?? "-"}
+                  rightLabel="Telefone"
+                  rightValue={student?.phone ?? "-"}
+                />
+                <InfoPair
+                  leftLabel="Nascimento"
+                  leftValue={formatDate(student?.birth_date ?? null)}
+                  rightLabel="Matrícula"
+                  rightValue={student?.academic_registration ?? "-"}
+                />
+                <InfoPair
+                  leftLabel="Instituição"
+                  leftValue={institution?.name ?? "-"}
+                  rightLabel="Curso"
+                  rightValue={course?.name ?? "-"}
+                />
+                <InfoPair
+                  leftLabel="Unidade"
+                  leftValue={unit?.name ?? "-"}
+                  rightLabel="Setor"
+                  rightValue={unit?.department ?? "-"}
+                />
+                <InfoPair
+                  leftLabel="Período"
+                  leftValue={presentation.intended_period ?? "-"}
+                  rightLabel="Horário"
+                  rightValue={presentation.intended_schedule ?? "-"}
+                />
+                <InfoPair
+                  leftLabel="Carga horária"
+                  leftValue={`${formatNumber(presentation.required_workload)}h`}
+                  rightLabel="Registro"
+                  rightValue={formatDate(presentation.created_at)}
+                />
+              </tbody>
+            </table>
+
+            <details className="group border-t border-slate-200 px-4 py-2.5">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Sondagem e acordo
+                <span className="text-slate-400 group-open:rotate-90">›</span>
+              </summary>
+
+              <div className="mt-2 grid gap-2 text-xs md:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-[11px] font-semibold uppercase text-slate-500">
+                    Sondagem
+                  </p>
+                  <p className="mt-1 text-slate-800">
+                    {inquiry?.coordination_decision
+                      ? statusLabel(inquiry.coordination_decision)
+                      : inquiry?.status
+                        ? statusLabel(inquiry.status)
+                        : "-"}
+                  </p>
+                  <p className="mt-1 text-slate-500">
+                    Autorizados: {formatNumber(inquiry?.coordination_approved_students ?? null)}
+                  </p>
+                  {inquiry?.requested_area && (
+                    <p className="mt-1 text-slate-500">
+                      Área: {inquiry.requested_area}
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-[11px] font-semibold uppercase text-slate-500">
+                    Acordo
+                  </p>
+                  <p className="mt-1 text-slate-800">
+                    {agreement?.status ? statusLabel(agreement.status) : "-"}
+                  </p>
+                  <p className="mt-1 text-slate-500">
+                    Vigência: {formatDate(agreement?.started_at ?? null)} a{" "}
+                    {formatDate(agreement?.ended_at ?? null)}
+                  </p>
+                  <p className="mt-1 text-slate-500">
+                    Ass.: {formatDate(agreement?.signed_at ?? null)} · Pub.:{" "}
+                    {formatDate(agreement?.published_at ?? null)}
+                  </p>
+                </div>
+              </div>
+
+              {inquiry?.coordination_notes && (
+                <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-600">
+                  <p className="text-[11px] font-semibold uppercase text-slate-500">
+                    Observação da sondagem
+                  </p>
+                  <p className="mt-1">{inquiry.coordination_notes}</p>
+                </div>
+              )}
+            </details>
+
+            <details className="group border-t border-slate-200 px-4 py-2.5">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Observação da análise
+                <span className="text-slate-400 group-open:rotate-90">›</span>
+              </summary>
+
+              <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                {presentation.review_notes ?? "Nenhuma observação registrada."}
+              </div>
+            </details>
+          </div>
+
+          <aside className="bg-slate-50 p-3">
+            <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Análise
+              </h3>
+
+              <form action={updateStudentPresentationReview} className="mt-2 grid gap-2">
+                <input type="hidden" name="presentation_id" value={presentation.id} />
+
+                <label className="grid gap-1">
+                  <span className="text-xs text-slate-600">Situação</span>
+                  <select
+                    name="status"
+                    defaultValue={presentation.status}
+                    required
+                    className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                  >
+                    <option value="apresentado">Apresentado</option>
+                    <option value="em_analise">Em análise</option>
+                    <option value="pendente_correcao">Pendente de correção</option>
+                    <option value="documentos_validados">Documentos validados</option>
+                    <option value="apto_para_autorizacao">Pronto para autorização</option>
+                    <option value="indeferido">Indeferido</option>
+                    <option value="cancelado">Cancelado</option>
+                  </select>
+                </label>
+
+                <label className="grid gap-1">
+                  <span className="text-xs text-slate-600">Observações</span>
+                  <textarea
+                    name="review_notes"
+                    rows={3}
+                    defaultValue={presentation.review_notes ?? ""}
+                    placeholder="Pendências ou orientações."
+                    className="rounded-md border border-slate-300 px-2 py-2 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  className="rounded-md bg-teal-700 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
+                >
+                  Salvar análise
+                </button>
+              </form>
+            </div>
+
+            <details className="group mt-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Acesso individual
+                <span className="text-slate-400 group-open:rotate-90">›</span>
+              </summary>
+
+              {studentAccess ? (
+                <div className="mt-2 rounded-md border border-teal-200 bg-teal-50 p-2 text-xs leading-5 text-teal-900">
+                  <p>Acesso já liberado.</p>
+                  <p className="mt-1">{studentAccess.email}</p>
+                  <p className="mt-1">
+                    {studentAccess.is_active ? "Ativo" : "Inativo"}
+                  </p>
+                </div>
+              ) : (
+                <form action={releaseStudentAccess} className="mt-2 grid gap-2">
+                  <input type="hidden" name="presentation_id" value={presentation.id} />
+
+                  <label className="grid gap-1">
+                    <span className="text-xs text-slate-600">Nome</span>
+                    <input
+                      name="full_name"
+                      defaultValue={student?.full_name ?? ""}
+                      required
+                      className="h-8 rounded-md border border-slate-300 px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                    />
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-xs text-slate-600">E-mail</span>
+                    <input
+                      type="email"
+                      name="email"
+                      defaultValue={student?.email ?? ""}
+                      required
+                      className="h-8 rounded-md border border-slate-300 px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                    />
+                  </label>
+
+                  <label className="grid gap-1">
+                    <span className="text-xs text-slate-600">Senha provisória</span>
+                    <input
+                      type="password"
+                      name="password"
+                      minLength={8}
+                      required
+                      placeholder="Mínimo de 8 caracteres"
+                      className="h-8 rounded-md border border-slate-300 px-2 text-xs outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                    />
+                  </label>
+
+                  <button
+                    type="submit"
+                    className="rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-teal-800 transition hover:bg-teal-100"
+                  >
+                    Liberar acesso
+                  </button>
+                </form>
+              )}
+            </details>
+          </aside>
+        </div>
+
+        <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500">
+          A análise não autoriza o início do estágio. A autorização será emitida em etapa própria.
+        </div>
       </section>
     </SystemShell>
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
+function Alert({ type, text }: { type: "success" | "error"; text: string }) {
+  const classes =
+    type === "success"
+      ? "border-teal-200 bg-teal-50 text-teal-800"
+      : "border-red-200 bg-red-50 text-red-700";
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-      <p className="text-xs font-bold uppercase text-slate-500">{label}</p>
-      <p className="mt-1 font-bold text-slate-900">{value}</p>
+    <section className={`mb-3 rounded-lg border px-4 py-2 text-sm font-medium ${classes}`}>
+      {text}
+    </section>
+  );
+}
+
+function HeaderCell({
+  label,
+  value,
+  subvalue,
+}: {
+  label: string;
+  value: string;
+  subvalue?: string;
+}) {
+  return (
+    <div className="border-b border-slate-100 px-4 py-2.5 md:border-b-0 md:border-r">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-0.5 break-words text-sm font-medium text-slate-900">{value}</p>
+      {subvalue && (
+        <p className="mt-0.5 break-words text-[11px] text-slate-500">
+          {subvalue}
+        </p>
+      )}
     </div>
+  );
+}
+
+function InfoPair({
+  leftLabel,
+  leftValue,
+  rightLabel,
+  rightValue,
+}: {
+  leftLabel: string;
+  leftValue: string;
+  rightLabel: string;
+  rightValue: string;
+}) {
+  return (
+    <tr>
+      <th className="w-36 bg-slate-50 px-4 py-2 align-top text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        {leftLabel}
+      </th>
+      <td className="w-[38%] px-4 py-2 align-top text-xs text-slate-800">
+        {leftValue}
+      </td>
+      <th className="w-36 bg-slate-50 px-4 py-2 align-top text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        {rightLabel}
+      </th>
+      <td className="px-4 py-2 align-top text-xs text-slate-800">
+        {rightValue}
+      </td>
+    </tr>
   );
 }
