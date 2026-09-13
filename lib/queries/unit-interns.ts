@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type UnitInternFilters = {
+  status?: string;
+  institution?: string;
+  course?: string;
+  student?: string;
+};
+
 export type UnitInternAuthorizationRow = {
   id: string;
   student_name: string;
@@ -16,7 +23,17 @@ export type UnitInternAuthorizationRow = {
   created_at: string;
 };
 
-export async function getUnitInternsData() {
+export type UnitInternOption = {
+  id: string;
+  name: string;
+};
+
+function cleanFilter(value?: string) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : undefined;
+}
+
+export async function getUnitInternsData(filters: UnitInternFilters = {}) {
   const supabase = await createClient();
 
   const {
@@ -28,6 +45,8 @@ export async function getUnitInternsData() {
     return {
       unit: null,
       interns: [] as UnitInternAuthorizationRow[],
+      institutions: [] as UnitInternOption[],
+      courses: [] as UnitInternOption[],
       error: "Usuário não autenticado.",
     };
   }
@@ -42,6 +61,8 @@ export async function getUnitInternsData() {
     return {
       unit: null,
       interns: [] as UnitInternAuthorizationRow[],
+      institutions: [] as UnitInternOption[],
+      courses: [] as UnitInternOption[],
       error: profileError?.message ?? "Perfil não encontrado.",
     };
   }
@@ -50,9 +71,16 @@ export async function getUnitInternsData() {
     return {
       unit: null,
       interns: [] as UnitInternAuthorizationRow[],
+      institutions: [] as UnitInternOption[],
+      courses: [] as UnitInternOption[],
       error: "Acesso permitido apenas à unidade municipal ativa.",
     };
   }
+
+  const status = cleanFilter(filters.status);
+  const institutionFilter = cleanFilter(filters.institution);
+  const courseFilter = cleanFilter(filters.course);
+  const studentFilter = cleanFilter(filters.student)?.toLowerCase();
 
   const { data: unit, error: unitError } = await supabase
     .from("municipal_units")
@@ -64,22 +92,42 @@ export async function getUnitInternsData() {
     return {
       unit: null,
       interns: [] as UnitInternAuthorizationRow[],
+      institutions: [] as UnitInternOption[],
+      courses: [] as UnitInternOption[],
       error: unitError?.message ?? "Unidade municipal não encontrada.",
     };
   }
 
-  const { data: internshipsData, error: internshipsError } = await supabase
+  let internshipsQuery = supabase
     .from("internships")
     .select(
       "id, authorization_id, student_id, institution_id, course_id, municipal_unit_id, supervisor_name, start_date, end_date, schedule, status, created_at",
     )
     .eq("municipal_unit_id", profile.municipal_unit_id)
-    .order("start_date", { ascending: false });
+    .order("start_date", { ascending: false })
+    .limit(200);
+
+  if (status) {
+    internshipsQuery = internshipsQuery.eq("status", status);
+  }
+
+  if (institutionFilter) {
+    internshipsQuery = internshipsQuery.eq("institution_id", institutionFilter);
+  }
+
+  if (courseFilter) {
+    internshipsQuery = internshipsQuery.eq("course_id", courseFilter);
+  }
+
+  const { data: internshipsData, error: internshipsError } =
+    await internshipsQuery;
 
   if (internshipsError) {
     return {
       unit,
       interns: [] as UnitInternAuthorizationRow[],
+      institutions: [] as UnitInternOption[],
+      courses: [] as UnitInternOption[],
       error: internshipsError.message,
     };
   }
@@ -135,6 +183,8 @@ export async function getUnitInternsData() {
     return {
       unit,
       interns: [] as UnitInternAuthorizationRow[],
+      institutions: [] as UnitInternOption[],
+      courses: [] as UnitInternOption[],
       error,
     };
   }
@@ -143,19 +193,21 @@ export async function getUnitInternsData() {
     (studentsResult.data ?? []).map((item) => [item.id, item]),
   );
 
-  const institutions = new Map(
-    (institutionsResult.data ?? []).map((item) => [item.id, item]),
+  const institutionsData = (institutionsResult.data ?? []).sort((a, b) =>
+    a.name.localeCompare(b.name),
   );
 
-  const courses = new Map(
-    (coursesResult.data ?? []).map((item) => [item.id, item]),
+  const coursesData = (coursesResult.data ?? []).sort((a, b) =>
+    a.name.localeCompare(b.name),
   );
 
+  const institutions = new Map(institutionsData.map((item) => [item.id, item]));
+  const courses = new Map(coursesData.map((item) => [item.id, item]));
   const authorizations = new Map(
     (authorizationsResult.data ?? []).map((item) => [item.id, item]),
   );
 
-  const interns = internships.map((item) => ({
+  let interns = internships.map((item) => ({
     id: item.id,
     student_name:
       students.get(item.student_id)?.full_name ?? "Estudante não identificado",
@@ -173,9 +225,27 @@ export async function getUnitInternsData() {
     created_at: item.created_at,
   })) as UnitInternAuthorizationRow[];
 
+  if (studentFilter) {
+    interns = interns.filter((item) =>
+      [item.student_name, item.student_email, item.course_name, item.institution_name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(studentFilter),
+    );
+  }
+
   return {
     unit,
     interns,
+    institutions: institutionsData.map((item) => ({
+      id: item.id,
+      name: item.name,
+    })),
+    courses: coursesData.map((item) => ({
+      id: item.id,
+      name: item.name,
+    })),
     error: null,
   };
 }
