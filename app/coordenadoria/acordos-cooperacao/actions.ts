@@ -626,185 +626,185 @@ export async function generateCoordinationAgreementDraft(formData: FormData) {
 
   const coursesText = courseNames.map((course) => `- ${course}`).join("\n");
 
-  const draftText = `ACORDO DE COOPERAÇÃO TÉCNICA ____/${onlyYear(agreement.started_at)}
+  const draftText = `**ACORDO DE COOPERAÇÃO TÉCNICA ____/${onlyYear(agreement.started_at)}**
 
-ACORDO DE COOPERAÇÃO TÉCNICA QUE ENTRE SI CELEBRAM O MUNICÍPIO DE MIRASSOL D'OESTE/MT E ${formatUpper(institutionName)} PARA OS FINS QUE ESPECIFICAM.
+**ACORDO DE COOPERAÇÃO TÉCNICA QUE ENTRE SI CELEBRAM O MUNICÍPIO DE MIRASSOL D'OESTE/MT E ${formatUpper(institutionName)}, PARA OS FINS QUE ESPECIFICAM.**
 
-Aos ${formatLongDraftDate(agreement.started_at)}, o MUNICÍPIO DE MIRASSOL D'OESTE/MT, pessoa jurídica de direito público interno, inscrito no CNPJ sob o nº 03.755.477/0001-75, com sede administrativa na Rua Antônio Tavares, nº 3310, Centro, nesta cidade de Mirassol d'Oeste/MT, neste ato representado pelo Prefeito Municipal, Sr. HÉCTOR ALVARES BEZERRA, brasileiro, residente e domiciliado nesta cidade, doravante denominado MUNICÍPIO, e de outro lado ${institutionName}, inscrita no CNPJ sob nº ${institution.cnpj}, com sede administrativa em ${institutionAddress}, neste ato representada por ${institution.legal_representative_name}, ${institution.legal_representative_role}${representativeDocument ? `, ${representativeDocument}` : ""}, doravante denominada INSTITUIÇÃO DE ENSINO, resolvem celebrar o presente ACORDO DE COOPERAÇÃO TÉCNICA, conforme as normas contidas na Lei Federal nº 11.788/2008 e na Lei Municipal nº 1.409/2017, mediante as disposições expressas nas cláusulas seguintes:
+Aos ${formatLongDraftDate(agreement.started_at)}, o **MUNICÍPIO DE MIRASSOL D'OESTE/MT**, pessoa jurídica de direito público interno, inscrito no CNPJ sob o nº 03.755.477/0001-75, com sede administrativa na Rua Antônio Tavares, nº 3310, Centro, nesta cidade, neste ato representado pelo Prefeito Municipal, Sr. **HÉCTOR ALVARES BEZERRA**, brasileiro, casado, portador do RG nº 2178138-9 SSP/MT, inscrito no CPF nº 036.127.931-01, residente e domiciliado nesta cidade na Rua Hélio Teixeira da Silva, nº 281, Jardim das Oliveiras, doravante denominado **MUNICÍPIO**, e de outro lado **${formatUpper(institutionName)}**, regularmente inscrita no CNPJ sob nº **${institution.cnpj}**, com sede administrativa em ${institutionAddress}, neste ato representada por **${formatUpper(institution.legal_representative_name)}**, ${institution.legal_representative_role}${representativeDocument ? `, ${representativeDocument}` : ""}, doravante denominada **INSTITUIÇÃO DE ENSINO**, resolvem celebrar o presente **ACORDO DE COOPERAÇÃO TÉCNICA**, conforme as normas contidas na Lei Federal nº 11.788/2008 e na Lei Municipal nº 1.409/2017, mediante as disposições expressas nas cláusulas seguintes:
 
-1. CLÁUSULA PRIMEIRA - DO OBJETO
+**1. CLÁUSULA PRIMEIRA - DO OBJETO**
 
-1.1. Constitui objeto do presente instrumento a mútua cooperação técnica e pedagógica entre os partícipes, para a concessão de vagas para estágio supervisionado obrigatório ou não obrigatório aos estudantes regularmente matriculados nos cursos mantidos pela INSTITUIÇÃO DE ENSINO, devidamente autorizados ou reconhecidos pelo Ministério da Educação – MEC, observada a disponibilidade das unidades da Administração Pública Municipal.
+1.1. Constitui objeto do presente instrumento a mútua cooperação técnica e pedagógica entre os partícipes, para a concessão de vagas para estágio aos alunos dos cursos mantidos pela **${formatUpper(institutionName)}**, observada a disponibilidade das unidades da Administração Pública Municipal.
 
 1.2. Ficam abrangidos pelo presente Acordo de Cooperação Técnica, inicialmente, os seguintes cursos:
 
 ${coursesText}
 
-1.3. A inclusão de novos cursos dependerá de prévia análise da Coordenadoria competente, do cadastro regular do curso no sistema e da existência de campo de estágio compatível no âmbito municipal.
+1.3. A inclusão de novos cursos dependerá de cadastro regular pela instituição, análise da Coordenadoria competente e existência de campo de estágio compatível no âmbito municipal.
 
-2. CLÁUSULA SEGUNDA - DO VÍNCULO EMPREGATÍCIO
+**2. CLÁUSULA SEGUNDA - DO VÍNCULO EMPREGATÍCIO**
 
-2.1. O estágio não gerará vínculo empregatício de qualquer natureza com a Prefeitura do Município de Mirassol d'Oeste/MT ou suas Unidades Administrativas, conforme previsto na legislação federal e municipal aplicável.
+2.1. O estágio não gerará vínculo empregatício de qualquer natureza com a Prefeitura do Município de Mirassol d'Oeste/MT ou suas Unidades Administrativas, conforme previsto na Lei Municipal nº 1.409/2017 e na legislação federal aplicável.
 
-3. CLÁUSULA TERCEIRA - DOS RECURSOS FINANCEIROS
+**3. CLÁUSULA TERCEIRA - DOS RECURSOS FINANCEIROS**
 
 3.1. Este Acordo de Cooperação Técnica não visa ao repasse de recursos financeiros entre os partícipes, tendo em vista o seu caráter eminentemente didático-pedagógico.
 
-Parágrafo Único – A INSTITUIÇÃO DE ENSINO responsabilizar-se-á, quando aplicável, pelo fornecimento dos recursos materiais, acadêmicos e documentos necessários à regular apresentação e acompanhamento dos estagiários, observadas as normas estabelecidas pelo Município e por suas Unidades Administrativas.
+Parágrafo Único - A **${formatUpper(institutionName)}** responsabilizar-se-á pelo fornecimento dos recursos materiais, acadêmicos e documentos necessários à regular apresentação e acompanhamento dos estagiários, tais como crachás de identificação, apólice de seguro, documentos pessoais e demais elementos exigidos para a formalização do estágio, conforme a necessidade e obedecendo às padronizações estabelecidas pela Prefeitura e suas Unidades.
 
-4. CLÁUSULA QUARTA - DO ESTÁGIO
+**4. CLÁUSULA QUARTA - DO ESTÁGIO**
 
-4.1. A Prefeitura do Município de Mirassol d'Oeste/MT poderá conceder estágio a estudantes regularmente matriculados e efetivamente frequentando os cursos oferecidos pela INSTITUIÇÃO DE ENSINO, desde que as atividades sejam compatíveis com a área de formação do estudante.
+4.1. A Prefeitura do Município de Mirassol d'Oeste/MT poderá conceder estágio, nos moldes da Lei Municipal nº 1.409/2017, a estudantes selecionados que estejam regularmente matriculados e efetivamente frequentando os cursos oferecidos pela **${formatUpper(institutionName)}**, devendo estes executar atividades relacionadas com os respectivos cursos.
 
-4.2. Os estágios serão realizados nas unidades da Administração Pública Municipal que apresentem compatibilidade com a área de formação do estudante e disponham de estrutura e supervisor técnico habilitado, conforme manifestação da Secretaria ou Unidade competente.
+4.2. Os estágios serão realizados nas unidades da Administração Pública Municipal que apresentem compatibilidade com a área de formação do estudante e disponham de estrutura, atividades compatíveis e supervisor técnico habilitado.
 
-4.3. A existência do presente Acordo de Cooperação Técnica não assegura, por si só, a disponibilização automática de vagas, ficando cada estágio condicionado à análise de viabilidade, disponibilidade, documentação e autorização específica.
+4.3. A existência do presente Acordo de Cooperação Técnica não assegura, por si só, a disponibilização automática de vagas, ficando cada estágio condicionado à análise de viabilidade, disponibilidade da unidade, documentação regular e autorização específica da Coordenadoria competente.
 
-5. CLÁUSULA QUINTA - DA FORMALIZAÇÃO DO ESTÁGIO
+**5. CLÁUSULA QUINTA - DA FORMALIZAÇÃO DO ESTÁGIO**
 
-5.1. A concessão do estágio estará condicionada à análise e manifestação da Secretaria ou Unidade competente quanto à disponibilidade de vaga, estrutura, atividades compatíveis e supervisão.
+5.1. A formalização da concessão do estágio efetivar-se-á mediante **Termo de Compromisso de Estágio - TCE**, a ser firmado entre a **${formatUpper(institutionName)}**, o estudante e o Município de Mirassol d'Oeste/MT, com interveniência obrigatória da Prefeitura.
 
-5.2. A formalização da concessão do estágio efetivar-se-á mediante Termo de Compromisso de Estágio a ser firmado entre a INSTITUIÇÃO DE ENSINO, o estudante e o Município de Mirassol d'Oeste/MT, com interveniência obrigatória das partes responsáveis.
+Parágrafo Único - O estagiário obrigar-se-á, mediante Termo de Compromisso, a cumprir as condições fixadas para o estágio, assim como as normas de trabalho estabelecidas pela Prefeitura e suas Unidades Administrativas, especialmente aquelas que resguardam sigilo, conduta funcional, proteção de dados e informações a que tenha acesso em decorrência do estágio.
 
-Parágrafo Único – O estagiário obrigar-se-á, mediante Termo de Compromisso, a cumprir as condições fixadas para o estágio, assim como as normas de trabalho estabelecidas pela Prefeitura e suas Unidades Administrativas, especialmente aquelas relacionadas à conduta, sigilo, proteção de dados e acesso às informações.
-
-6. CLÁUSULA SEXTA - DA DURAÇÃO DO ESTÁGIO
+**6. CLÁUSULA SEXTA - DA DURAÇÃO DO ESTÁGIO**
 
 6.1. A duração dos estágios observará o prazo estabelecido no respectivo Termo de Compromisso, não podendo exceder 02 (dois) anos, exceto quando se tratar de estagiário com deficiência, nos termos da legislação aplicável.
 
-7. CLÁUSULA SÉTIMA - DA JORNADA DE TRABALHO
+**7. CLÁUSULA SÉTIMA - DA JORNADA DE TRABALHO**
 
-7.1. A jornada de estágio será definida no Termo de Compromisso, dependendo da disponibilidade da unidade municipal, devendo ser cumprida em horário compatível com as atividades acadêmicas do estudante.
+7.1. A jornada de trabalho de estágio será definida no Termo de Compromisso, dependendo da disponibilidade do setor, a ser cumprida em horário estabelecido pelas Unidades da Prefeitura, compatível com as atividades acadêmicas do estagiário e respeitadas as normas estabelecidas pela **${formatUpper(institutionName)}**.
 
 7.2. A jornada não poderá ultrapassar 06 (seis) horas diárias e 30 (trinta) horas semanais, sendo vedada a permanência de estagiários como voluntários ou em horários diversos daqueles formalmente autorizados.
 
-Parágrafo Único – É assegurado ao estagiário, sempre que o estágio tenha duração igual ou superior a 01 (um) ano, período de recesso de 30 (trinta) dias, a ser gozado preferencialmente durante as férias escolares, observada a legislação aplicável.
+Parágrafo Único - É assegurado ao estagiário, sempre que o estágio tenha duração igual ou superior a 01 (um) ano, período de recesso de 30 (trinta) dias, a ser gozado preferencialmente durante as férias escolares, observada a legislação aplicável.
 
-8. CLÁUSULA OITAVA - DO ACOMPANHAMENTO DO ESTÁGIO
+**8. CLÁUSULA OITAVA - DO ACOMPANHAMENTO DO ESTÁGIO**
 
-8.1. O estágio será desenvolvido sob orientação de professor orientador indicado pela INSTITUIÇÃO DE ENSINO e sob supervisão de servidor da Prefeitura com formação ou experiência na área do estágio.
+8.1. O estágio será desenvolvido sob orientação do professor indicado pela **${formatUpper(institutionName)}** e sob supervisão de servidor da Prefeitura com formação ou experiência profissional na área de conhecimento desenvolvida no curso do estagiário, respeitada a regulamentação da Prefeitura e de suas Unidades.
 
-8.2. A supervisão municipal será definida pela unidade concedente, de acordo com a compatibilidade das atividades, disponibilidade administrativa e capacidade de acompanhamento.
+**9. CLÁUSULA NONA - DAS OBRIGAÇÕES**
 
-9. CLÁUSULA NONA - DAS OBRIGAÇÕES
+**9.1. São obrigações da ${formatUpper(institutionName)}:**
 
-9.1. São obrigações da INSTITUIÇÃO DE ENSINO:
+9.1.1. Celebrar o Termo de Compromisso de Estágio com o educando ou com seu representante ou assistente legal, quando ele for absoluta ou relativamente incapaz, e com o Município, indicando as condições de adequação do estágio à proposta pedagógica do curso, à etapa e modalidade da formação escolar do estudante e ao horário e calendário escolar;
 
-9.1.1. Celebrar o Termo de Compromisso de Estágio com o estudante ou com seu representante ou assistente legal, quando for o caso, e com o Município, indicando as condições de adequação do estágio à proposta pedagógica do curso, à etapa e modalidade da formação escolar do estudante e ao horário e calendário escolar;
+9.1.2. Avaliar as instalações da Prefeitura e sua adequação à formação cultural e profissional do educando;
 
-9.1.2. Avaliar, quando necessário, as instalações disponibilizadas pelo Município e sua adequação à formação cultural e profissional do estudante;
+9.1.3. Indicar professor orientador da área a ser desenvolvida no estágio, como responsável pelo acompanhamento e avaliação das atividades do estagiário;
 
-9.1.3. Indicar professor orientador da área a ser desenvolvida no estágio, responsável pelo acompanhamento e avaliação das atividades do estagiário;
+9.1.4. Exigir do educando a apresentação periódica de relatório das atividades, em prazo não superior a 06 (seis) meses;
 
-9.1.4. Exigir do estudante a apresentação periódica de relatório de atividades, em prazo não superior a 06 (seis) meses;
+9.1.5. Zelar pelo cumprimento do Termo de Compromisso, reorientando o estagiário para outro local em caso de descumprimento de suas normas;
 
-9.1.5. Zelar pelo cumprimento do Termo de Compromisso, adotando as providências cabíveis em caso de descumprimento de suas normas;
+9.1.6. Elaborar normas complementares e instrumentos de avaliação dos estágios de seus educandos;
 
-9.1.6. Elaborar normas complementares e instrumentos de avaliação dos estágios de seus estudantes;
+9.1.7. Comunicar à Prefeitura, no início do período letivo, as datas de realização de avaliações escolares ou acadêmicas;
 
-9.1.7. Comunicar ao Município, no início do período letivo, as datas de realização de avaliações escolares ou acadêmicas, quando houver impacto na jornada de estágio;
+9.1.8. Promover o ajuste das condições de estágio definidas pela Instituição de Ensino com a disponibilidade da Prefeitura, indicando as principais atividades a serem desenvolvidas pelos estagiários, observando sua compatibilidade com programas, currículos escolares e diretrizes educacionais;
 
-9.1.8. Promover o ajuste das condições de estágio definidas pela Instituição de Ensino com a disponibilidade do Município, indicando as principais atividades a serem desenvolvidas pelos estagiários e observando sua compatibilidade com programas, currículos escolares e diretrizes educacionais;
+9.1.9. Encaminhar à Prefeitura os estudantes cadastrados e interessados nas oportunidades de estágio, observando os procedimentos definidos pela Coordenadoria competente;
 
-9.1.9. Encaminhar ao Município os estudantes interessados nas oportunidades de estágio, observando os procedimentos definidos pela Coordenadoria competente;
+9.1.10. Preparar toda a documentação legal referente ao estágio, incluindo:
 
-9.1.10. Preparar e encaminhar a documentação legal referente ao estágio, incluindo Termo de Compromisso de Estágio, documentos pessoais, comprovação de vínculo acadêmico, carta de apresentação, apólice de seguro contra acidentes pessoais e demais documentos exigidos pelo Município;
+a) Acordo de Cooperação Técnica entre a **${formatUpper(institutionName)}** e a Prefeitura do Município de Mirassol d'Oeste/MT;
 
-9.1.11. Comunicar ao Município ou à Unidade Administrativa em que o estagiário estiver atuando qualquer irregularidade na situação escolar do estudante;
+b) Termo de Compromisso de Estágio - TCE, juntamente com os documentos pessoais, documentos que comprovem o vínculo com a instituição de ensino, carta de apresentação, apólice de seguro contra acidentes pessoais e demais documentos exigidos pelo Município;
 
-9.1.12. Contratar, em favor dos estagiários, seguro contra acidentes pessoais antes de iniciada a prática de estágio, cuja apólice seja compatível com valores de mercado e permaneça vigente durante todo o período de estágio;
+c) Acompanhar a realização do estágio junto à Prefeitura ou suas Unidades Administrativas, disponibilizando as informações pertinentes;
 
-9.1.13. Encaminhar ao Município, quando solicitado, informações referentes à programação de estágios, para fins de organização e acompanhamento;
+9.1.11. Oficiar a Prefeitura ou a Unidade Administrativa em que o estagiário estiver atuando sobre qualquer irregularidade na situação escolar do estagiário;
 
-9.1.14. Apresentar o estagiário no campo de estágio por intermédio de responsável da área respectiva, portando os documentos necessários, sem os quais o estagiário não poderá iniciar suas atividades;
+9.1.12. Contratar, em favor dos estagiários, seguro contra acidentes pessoais antes de iniciada a prática de estágio, conforme legislação pertinente, cuja apólice seja compatível com valores de mercado, renovando-o sempre, de forma que os estagiários não fiquem sem a devida cobertura;
+
+9.1.13. Encaminhar à Prefeitura ou às suas Unidades Administrativas, quando solicitado ou necessário, as informações, programações e escalas de estágio referentes a cada curso e unidade, para fins de apreciação, ciência e aceite;
+
+9.1.14. Apresentar o estagiário no campo de estágio por intermédio de responsável da área respectiva, portando os documentos exigidos, sem os quais o estagiário não poderá iniciar suas atividades;
 
 9.1.15. Acompanhar e avaliar o desenvolvimento do estágio;
 
 9.1.16. Manter comunicação direta com os responsáveis pelos setores da Prefeitura e suas Unidades Administrativas para tomar ciência do desempenho das atividades exercidas pelo estagiário;
 
-9.1.17. Fornecer, sempre que solicitado pelo Município, informações a respeito do estudante;
+9.1.17. Fornecer, sempre que solicitado pela Prefeitura, informações a respeito do aluno;
 
-9.1.18. Tomar as providências cabíveis sempre que algum estagiário se envolver em desvio de conduta ou desrespeitar as normas do estágio;
+9.1.18. Tomar as providências cabíveis sempre que algum estagiário se envolver em desvio de conduta ou desrespeitar o regimento ou as normas do estágio;
 
-9.1.19. Responsabilizar-se, na forma da lei, por danos causados por seus estudantes, desde que devidamente comprovada a responsabilidade;
+9.1.19. Responsabilizar-se, na forma da lei, por danos causados pelos estagiários, aos servidores e ao patrimônio público, bem como por quaisquer encargos eventualmente incidentes sobre as atividades de estágio, desde que devidamente comprovada sua responsabilidade;
 
 9.1.20. Respeitar as normas administrativas existentes;
 
-9.1.21. Anuir e executar o presente Acordo de Cooperação Técnica com estrita observância da legislação federal, municipal e das normas regulamentares aplicáveis;
+9.1.21. Anuir e executar o presente Acordo de Cooperação Técnica com estrita obediência à Lei Municipal nº 1.409/2017, à Lei Federal nº 11.788/2008 e às Portarias e Normas Regulamentares das atividades de estágio curricular existentes.
 
-9.1.22. Encaminhar a documentação necessária por representante ou responsável indicado pela INSTITUIÇÃO DE ENSINO, ficando vedado o envio informal de documentos diretamente pelo estudante quando não autorizado pelo Município.
-
-9.2. São obrigações da Prefeitura e suas Unidades Administrativas:
+**9.2. São obrigações da Prefeitura e suas Unidades Administrativas:**
 
 9.2.1. Celebrar Acordo de Cooperação Técnica com a instituição de ensino, zelando por seu cumprimento;
 
-9.2.2. Ofertar instalações que tenham condições de proporcionar ao estudante atividades de aprendizagem social, profissional e cultural, conforme disponibilidade administrativa;
+9.2.2. Ofertar instalações que tenham condições de proporcionar ao educando atividades de aprendizagem social, profissional e cultural;
 
-9.2.3. Assegurar que o estágio, como ato educativo escolar supervisionado, tenha acompanhamento efetivo por supervisor da parte concedente, observado o critério de conveniência e capacidade da Administração Pública;
+9.2.3. Indicar servidor de seu quadro de pessoal, com formação ou experiência profissional na área de conhecimento desenvolvida no curso do estagiário, para orientar e supervisionar conforme a capacidade de execução de cada profissional;
 
 9.2.4. Entregar termo ou relatório de realização do estágio com indicação resumida das atividades desenvolvidas, dos períodos e da avaliação de desempenho do estagiário, quando cabível;
 
 9.2.5. Manter à disposição da fiscalização os documentos que comprovem a relação de estágio;
 
-9.2.6. Encaminhar à instituição de ensino, quando exigido, relatório de atividades com vista obrigatória ao estagiário;
+9.2.6. Enviar à instituição de ensino, quando exigido, relatório de atividades com vista obrigatória ao estagiário;
 
-9.2.7. Cumprir as responsabilidades assumidas no presente Acordo de Cooperação Técnica e nos Termos de Compromisso de Estágio celebrados;
+9.2.7. Cumprir as responsabilidades assumidas no presente Acordo de Cooperação Técnica e nos Termos de Compromisso de Estágio celebrados com os estagiários;
 
-9.2.8. Solicitar ao estagiário ou à instituição de ensino, a qualquer tempo, documentos comprobatórios da regularidade da situação escolar;
+9.2.8. Solicitar ao estagiário, a qualquer tempo, documentos comprobatórios da regularidade da situação escolar;
 
-9.2.9. Informar à INSTITUIÇÃO DE ENSINO, de imediato, sempre que identificada irregularidade na situação escolar de qualquer estagiário ou quando ocorrer rescisão antecipada do Termo de Compromisso de Estágio;
+9.2.9. Informar à **${formatUpper(institutionName)}**, de imediato, sempre que identificada irregularidade na situação escolar de qualquer estagiário ou quando ocorrer rescisão antecipada de qualquer Termo de Compromisso de Estágio - TCE;
 
-9.2.10. Participar da sistemática de acompanhamento, supervisão e avaliação dos estágios, fornecendo dados à INSTITUIÇÃO DE ENSINO, quando solicitado e quando compatível com as atribuições municipais;
+9.2.10. Participar da sistemática de acompanhamento, supervisão e avaliação dos estágios, fornecendo dados à **${formatUpper(institutionName)}**, quando solicitado;
 
-9.2.11. Informar os locais, horários, normas internas e responsáveis pelas atividades de estágio, de acordo com os Termos de Compromisso firmados;
+9.2.11. Informar à **${formatUpper(institutionName)}**, em tempo hábil, os locais e horários para a prática das atividades de estágio, de acordo com os Termos de Compromisso de Estágio firmados, repassando os regulamentos internos e as normas referentes a cada atividade e seus respectivos setores, bem como seus responsáveis;
 
 9.2.12. Disponibilizar espaço físico na Unidade onde serão realizadas as atividades de estágio, de acordo com a disponibilidade e as condições de cada setor;
 
-9.2.13. Proporcionar ao estudante experiências válidas para a elaboração de relatórios acadêmicos e conclusão do estágio, ressalvada a autonomia científica e pedagógica da instituição de ensino;
+9.2.13. Proporcionar ao aluno experiências válidas para a elaboração do relatório final de conclusão do estágio, ressalvada a autonomia científica deste trabalho;
 
-9.2.14. Comunicar à INSTITUIÇÃO DE ENSINO, em tempo hábil, possíveis alterações nas condições de estágio pactuadas no Termo de Compromisso.
+9.2.14. Comunicar à **${formatUpper(institutionName)}**, em tempo hábil, possíveis alterações nas condições de estágio pactuadas nos Termos de Compromisso.
 
-9.3. Compete ao estagiário:
+**9.3. Compete ao estagiário:**
 
-9.3.1. Firmar Termo de Compromisso para a prática das atividades de estágio, declarando conhecer as normas e critérios para sua realização;
+9.3.1. Firmar Termo de Compromisso para a prática das atividades de estágio, nos termos da Lei Municipal nº 1.409/2017 e da Lei Federal nº 11.788/2008, declarando conhecer as normas e critérios para realização do estágio;
 
-9.3.2. Apresentar-se ao local de estágio devidamente identificado, quando exigido;
+9.3.2. Apresentar-se ao local de estágio devidamente identificado e uniformizado, quando exigido;
 
-9.3.3. Realizar o estágio em conformidade com a legislação de ensino e com as normas, rotinas, regulamentos e procedimentos da Prefeitura e suas Unidades Administrativas;
+9.3.3. Realizar o estágio em conformidade com a legislação de ensino, respeitando e cumprindo as normas, rotinas, regulamentos e procedimentos da Prefeitura e suas Unidades Administrativas;
 
 9.3.4. Manter comportamento ético, agindo com discrição e respeito aos usuários, servidores e demais estagiários;
 
-9.3.5. Solicitar orientação aos servidores responsáveis sempre que necessário;
+9.3.5. Solicitar orientação aos servidores sempre que necessário;
 
 9.3.6. Cumprir fielmente os horários de chegada e saída do campo de estágio.
 
-10. CLÁUSULA DÉCIMA - DA RESCISÃO
+**10. CLÁUSULA DÉCIMA - DA RESCISÃO**
 
 10.1. O presente Acordo de Cooperação Técnica poderá ser rescindido, a qualquer tempo:
 
-A) Automaticamente ao término do prazo de vigência;
+a) automaticamente ao término do prazo de vigência;
 
-B) Em caso fortuito ou de força maior, devidamente comprovado, que impeça a sua execução;
+b) em caso fortuito ou de força maior, devidamente comprovado, que impeça a sua execução;
 
-C) De comum acordo entre as partes;
+c) de comum acordo entre as partes;
 
-D) Unilateralmente, por interesse de qualquer das partes, mediante comunicação prévia com antecedência mínima de 30 (trinta) dias, sem direito a indenização.
+d) unilateralmente, por interesse de qualquer das partes, se houver conveniência administrativa, devendo a outra parte ser notificada com pelo menos 30 (trinta) dias de antecedência, sem qualquer direito à indenização.
 
-Parágrafo Único – Em qualquer hipótese de rescisão, fica garantida a conclusão dos planos de trabalho em execução à época da rescisão, quando possível e desde que não haja prejuízo ao interesse público.
+Parágrafo Único - Em qualquer hipótese de rescisão, fica garantida a conclusão dos planos de trabalho em execução à época da rescisão, quando possível e desde que não haja prejuízo ao interesse público.
 
-11. CLÁUSULA DÉCIMA PRIMEIRA - DO PRAZO
+**11. CLÁUSULA DÉCIMA PRIMEIRA - DO PRAZO**
 
 11.1. O presente Acordo de Cooperação Técnica vigorará de ${formatDraftDate(agreement.started_at)} a ${formatDraftDate(agreement.ended_at)}, podendo ser prorrogado mediante Termo Aditivo, observada a legislação aplicável e o interesse público.
 
-12. CLÁUSULA DÉCIMA SEGUNDA - DA EXECUÇÃO
+**12. CLÁUSULA DÉCIMA SEGUNDA - DA EXECUÇÃO**
 
 12.1. As partes praticarão, reciprocamente, os atos necessários à efetiva execução das presentes disposições por intermédio dos seus representantes legais ou de pessoa regularmente designada.
 
-12.2. Para fins de comunicação operacional relacionada aos estágios, a INSTITUIÇÃO DE ENSINO indica como responsável ${institution.internship_sector_contact_name}, e-mail ${institution.internship_sector_contact_email}, telefone ${institution.internship_sector_contact_phone}.
+12.2. Para fins de comunicação operacional relacionada aos estágios, a **${formatUpper(institutionName)}** indica como responsável ${institution.internship_sector_contact_name}, e-mail ${institution.internship_sector_contact_email}, telefone ${institution.internship_sector_contact_phone}.
 
-13. CLÁUSULA DÉCIMA TERCEIRA - DA PROTEÇÃO DE DADOS PESSOAIS (LGPD)
+**13. CLÁUSULA DÉCIMA TERCEIRA - DA PROTEÇÃO DE DADOS PESSOAIS (LGPD)**
 
-13.1. As partes comprometem-se a cumprir integralmente as disposições da Lei Federal nº 13.709/2018 (Lei Geral de Proteção de Dados Pessoais – LGPD), bem como demais normas aplicáveis à proteção de dados pessoais.
+13.1. As partes comprometem-se a cumprir integralmente as disposições da Lei Federal nº 13.709/2018, Lei Geral de Proteção de Dados Pessoais - LGPD, bem como demais normas aplicáveis à proteção de dados pessoais.
 
 13.2. Os dados pessoais a que as partes tiverem acesso em razão deste Acordo deverão ser utilizados exclusivamente para a execução das atividades relacionadas ao estágio, sendo vedado seu uso para finalidade diversa.
 
@@ -814,30 +814,30 @@ Parágrafo Único – Em qualquer hipótese de rescisão, fica garantida a concl
 
 13.5. Em caso de incidente envolvendo dados pessoais, a parte responsável deverá comunicar a outra parte, adotando as providências necessárias para mitigar os danos, nos termos da legislação vigente.
 
-14. CLÁUSULA DÉCIMA QUARTA - DOS CASOS OMISSOS
+**14. CLÁUSULA DÉCIMA QUARTA - DOS CASOS OMISSOS**
 
-14.1. O presente Acordo de Cooperação Técnica será executado sob a égide da Lei Municipal nº 1.409/2017 e alterações posteriores, da Lei Federal nº 11.788/2008 e demais normas aplicáveis.
+14.1. O presente Acordo de Cooperação Técnica será executado sob a égide da Lei Municipal nº 1.409/2017 e alterações posteriores, e ainda da Lei Federal nº 11.788, de 25 de setembro de 2008.
 
-14.2. Os casos omissos e dúvidas decorrentes de fatos não contemplados no presente instrumento serão dirimidos segundo os princípios jurídicos aplicáveis, preservando-se o interesse público.
+14.2. Caso haja dúvidas decorrentes de fatos não contemplados no presente instrumento, estas serão dirimidas segundo os princípios jurídicos aplicáveis à situação fática existente, preservando-se o interesse público.
 
-15. CLÁUSULA DÉCIMA QUINTA - DO FORO
+**15. CLÁUSULA DÉCIMA QUINTA - DO FORO**
 
 15.1. Fica eleito o Foro da Comarca de Mirassol d'Oeste/MT para dirimir quaisquer dúvidas oriundas do presente Acordo de Cooperação Técnica.
 
-16. CLÁUSULA DÉCIMA SEXTA - DA PUBLICAÇÃO
+**16. CLÁUSULA DÉCIMA SEXTA - DA PUBLICAÇÃO**
 
 16.1. O presente instrumento será publicado no Diário Oficial dos Municípios de Mato Grosso.
 
-Para firmeza e como prova do acordado, é lavrado o presente Acordo de Cooperação Técnica, o qual, depois de lido e achado conforme, será assinado pelas partes, dele sendo extraídas quantas cópias forem necessárias para seu fiel cumprimento, todas de igual teor e forma.
+Para firmeza e como prova do acordado, é lavrado o presente Acordo de Cooperação Técnica, o qual, depois de lido e achado conforme, é assinado pelas partes, dele sendo extraídas quantas cópias forem necessárias para seu fiel cumprimento, todas de igual teor e forma.
 
 Mirassol d'Oeste/MT, ____ de __________________ de ______.
 
 
-HÉCTOR ALVARES BEZERRA
+**HÉCTOR ALVARES BEZERRA**
 Prefeito Municipal
 
 
-${formatUpper(institution.legal_representative_name)}
+**${formatUpper(institution.legal_representative_name)}**
 ${institution.legal_representative_role}
 ${formatUpper(institutionName)}
 `;
@@ -866,4 +866,8 @@ ${formatUpper(institutionName)}
 
   redirect(`/coordenadoria/acordos-cooperacao/${id}`);
 }
+
+
+
+
 
