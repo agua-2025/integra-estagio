@@ -4,12 +4,32 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+function getHomePathByRole(role: string | null | undefined) {
+  if (role === "instituicao") return "/instituicao";
+  if (role === "unidade") return "/unidade";
+  if (role === "estagiario") return "/estagiario";
+  if (role === "admin" || role === "coordenadoria") return "/coordenadoria";
+
+  return "/acesso?negado=1";
+}
+
+function isAllowedPathForRole(path: string, role: string | null | undefined) {
+  if (role === "instituicao") return path.startsWith("/instituicao");
+  if (role === "unidade") return path.startsWith("/unidade");
+  if (role === "estagiario") return path.startsWith("/estagiario");
+  if (role === "admin" || role === "coordenadoria") {
+    return path.startsWith("/coordenadoria");
+  }
+
+  return false;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const nextPath = searchParams.get("next") || "/coordenadoria";
+  const requestedNextPath = searchParams.get("next");
   const profileError = searchParams.get("erro") === "perfil";
 
   const [email, setEmail] = useState("");
@@ -32,14 +52,45 @@ export function LoginForm() {
       password,
     });
 
-    setIsLoading(false);
-
     if (error) {
+      setIsLoading(false);
       setMessage("Não foi possível entrar. Confira o e-mail e a senha.");
       return;
     }
 
-    router.push(nextPath);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setIsLoading(false);
+      setMessage("Não foi possível identificar o usuário autenticado.");
+      return;
+    }
+
+    const { data: profile, error: profileLookupError } = await supabase
+      .from("profiles")
+      .select("role, is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    setIsLoading(false);
+
+    if (profileLookupError || !profile || !profile.is_active) {
+      setMessage(
+        "Seu usuário ainda não possui perfil ativo no sistema. Solicite a liberação à Coordenadoria.",
+      );
+      return;
+    }
+
+    const homePath = getHomePathByRole(profile.role);
+    const destination =
+      requestedNextPath && isAllowedPathForRole(requestedNextPath, profile.role)
+        ? requestedNextPath
+        : homePath;
+
+    router.push(destination);
     router.refresh();
   }
 
@@ -85,5 +136,3 @@ export function LoginForm() {
     </form>
   );
 }
-
-
