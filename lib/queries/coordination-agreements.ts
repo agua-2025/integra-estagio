@@ -258,8 +258,13 @@ export async function getCoordinationAgreementsData(
       agreement.status === "ativo" &&
       Boolean(agreement.signed_at) &&
       Boolean(agreement.published_at) &&
-      (!agreement.started_at || agreement.started_at <= today) &&
-      (!agreement.ended_at || agreement.ended_at >= today),
+      Boolean(agreement.publication_reference) &&
+      Boolean(agreement.document_url) &&
+      Boolean(agreement.started_at) &&
+      Boolean(agreement.ended_at) &&
+      agreement.started_at <= today &&
+      agreement.ended_at >= today &&
+      (coursesByAgreement.get(agreement.id) ?? []).length > 0,
   })) as CoordinationAgreementRow[];
 
   const viableInquiries = (viableInquiriesResult.data ?? []).map((inquiry) => ({

@@ -40,14 +40,21 @@ function validateActiveAgreement(data: {
   endedAt: string | null;
   signedAt: string | null;
   publishedAt: string | null;
+  publicationReference: string | null;
   documentUrl: string | null;
 }) {
   if (data.status !== "ativo") {
     return;
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+
   if (!data.startedAt || !data.endedAt) {
     throw new Error("Para ativar o acordo, informe o início e o fim da vigência.");
+  }
+
+  if (data.endedAt < today) {
+    throw new Error("Não é possível ativar acordo com vigência encerrada.");
   }
 
   if (!data.signedAt) {
@@ -58,8 +65,16 @@ function validateActiveAgreement(data: {
     throw new Error("Para ativar o acordo, informe a data de publicação.");
   }
 
+  if (data.publishedAt < data.signedAt) {
+    throw new Error("A data de publicação não pode ser anterior à data de assinatura.");
+  }
+
+  if (!data.publicationReference) {
+    throw new Error("Para ativar o acordo, informe a referência da publicação.");
+  }
+
   if (!data.documentUrl) {
-    throw new Error("Para ativar o acordo, informe o link do documento assinado/publicado.");
+    throw new Error("Para ativar o acordo, informe ou anexe o documento assinado/publicado.");
   }
 }
 
@@ -349,8 +364,25 @@ export async function updateCoordinationAgreement(formData: FormData) {
     endedAt,
     signedAt,
     publishedAt,
+    publicationReference,
     documentUrl,
   });
+
+  if (status === "ativo") {
+    const { count: activeCoursesCount, error: activeCoursesError } = await supabase
+      .from("agreement_courses")
+      .select("id", { count: "exact", head: true })
+      .eq("agreement_id", id)
+      .eq("is_active", true);
+
+    if (activeCoursesError) {
+      throw new Error(activeCoursesError.message);
+    }
+
+    if (!activeCoursesCount || activeCoursesCount <= 0) {
+      throw new Error("Para ativar o acordo, vincule ao menos um curso ativo.");
+    }
+  }
 
   const { error } = await supabase
     .from("cooperation_agreements")
