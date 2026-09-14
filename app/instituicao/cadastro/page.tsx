@@ -291,7 +291,7 @@ export default async function InstituicaoCadastroPage({
             </label>
 
             <label className={labelClass}>
-              <span className={spanClass}>RG/documento</span>
+              <span className={spanClass}>RG/documento, se houver</span>
               <input
                 name="legal_representative_rg"
                 disabled={!canEditInstitution}
@@ -302,7 +302,7 @@ export default async function InstituicaoCadastroPage({
             </label>
 
             <label className={labelClass}>
-              <span className={spanClass}>Órgão expedidor</span>
+              <span className={spanClass}>Órgão expedidor, se houver</span>
               <input
                 name="legal_representative_rg_issuer"
                 disabled={!canEditInstitution}
