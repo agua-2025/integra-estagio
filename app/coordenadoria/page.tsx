@@ -1,295 +1,341 @@
-import Link from "next/link";
-import { ActionCard } from "@/components/system/ActionCard";
-import { SummaryCard } from "@/components/system/SummaryCard";
+import type { ComponentType } from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
+  FileSignature,
+  GraduationCap,
+  Layers3,
+  ListChecks,
+  ShieldCheck,
+} from "lucide-react";
 import { SystemShell } from "@/components/system/SystemShell";
+import { createClient } from "@/lib/supabase/server";
 
-const summaries = [
-  {
-    label: "Sondagens",
-    value: "0",
-    description: "Consultas recebidas para análise de campo.",
-  },
-  {
-    label: "Pendências",
-    value: "0",
-    description: "Processos aguardando documento ou manifestação.",
-  },
-  {
-    label: "Acordos",
-    value: "0",
-    description: "Acordos em análise, assinatura ou vigência.",
-  },
-  {
-    label: "Estágios",
-    value: "0",
-    description: "Estágios autorizados ou em acompanhamento.",
-  },
-];
+type IconComponent = ComponentType<{ className?: string }>;
 
-const processActions = [
-  {
-    title: "Consolidar viabilidade",
-    description:
-      "Organize as respostas das unidades e informe se há possibilidade total, parcial ou inexistente.",
-  },
-];
+async function safeCount(
+  table: string,
+  apply?: (query: any) => any,
+): Promise<number> {
+  try {
+    const supabase = await createClient();
 
-export default function CoordenadoriaAreaPage() {
+    let query = supabase.from(table).select("*", {
+      count: "exact",
+      head: true,
+    });
+
+    if (apply) {
+      query = apply(query);
+    }
+
+    const { count, error } = await query;
+
+    if (error) {
+      return 0;
+    }
+
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+function MetricCard({
+  label,
+  value,
+  description,
+  Icon,
+}: {
+  label: string;
+  value: number;
+  description: string;
+  Icon: IconComponent;
+}) {
   return (
-    <SystemShell
-      areaLabel="Área da Coordenadoria"
-      title="Controle central do fluxo"
-      description="Ambiente responsável por analisar solicitações, consultar unidades, controlar acordos, validar documentos e autorizar o início dos estágios."
-    >
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {summaries.map((item) => (
-          <SummaryCard key={item.label} {...item} />
-        ))}
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+            {label}
+          </p>
+          <p className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+            {value}
+          </p>
+        </div>
+
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+          <Icon className="h-5 w-5" />
+        </div>
       </div>
 
-      <section className="mt-8">
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-            Configurações principais
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Organize as bases do sistema antes de liberar os fluxos para as
-            instituições e unidades.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Link
-            href="/coordenadoria/campos-estagio"
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
-                  Campos de Estágio
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Cadastre, edite, publique ou suspenda áreas disponíveis.
-                </p>
-              </div>
-
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Configurar
-              </span>
-            </div>
-          </Link>
-
-          <Link
-            href="/coordenadoria/unidades"
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
-                  Unidades Municipais
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Cadastre secretarias, setores e órgãos que poderão receber estagiários.
-                </p>
-              </div>
-
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Configurar
-              </span>
-            </div>
-          </Link>
-
-          <Link
-            href="/coordenadoria/instituicoes-cursos"
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
-                  Instituições e cursos
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Cadastre instituições, cursos, responsáveis e documentos institucionais.
-                </p>
-              </div>
-
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Configurar
-              </span>
-            </div>
-          </Link>
-
-          <Link
-            href="/coordenadoria/solicitacoes-acesso"
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
-                  Solicitações de Acesso
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Analise pedidos de acesso enviados por instituições de ensino.
-                </p>
-              </div>
-
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Analisar
-              </span>
-            </div>
-          </Link>
-
-          <Link
-            href="/coordenadoria/acordos-cooperacao"
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-950 group-hover:text-teal-800">
-                  Acordos de Cooperação
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Controle pedidos, minutas, assinaturas, publicações e vigência.
-                </p>
-              </div>
-
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Gerenciar
-              </span>
-            </div>
-          </Link>
-        </div>
-      </section>
-
-      <section className="mt-8">
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-            Gestão do processo
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Acompanhe as etapas sob responsabilidade da Coordenadoria.
-          </p>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <Link
-            href="/coordenadoria/sondagens"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Analisar sondagens
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Entrada
-              </span>
-            </div>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Receba consultas de instituições e encaminhe às unidades municipais
-              para manifestação sobre disponibilidade de campo.
-            </p>
-          </Link>
-
-          <Link
-            href="/coordenadoria/estudantes"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Validar estudantes
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Documentos
-              </span>
-            </div>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Confira carta de apresentação, termo de compromisso, seguro e
-              demais documentos antes de liberar a próxima etapa.
-            </p>
-          </Link>
-
-          <Link
-            href="/coordenadoria/autorizacoes"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Autorizar início
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Liberação
-              </span>
-            </div>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Libere o início do estágio somente após validação completa dos
-              documentos, unidade definida e supervisor indicado.
-            </p>
-          </Link>
-
-          <Link
-            href="/coordenadoria/estagios"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Acompanhar estágios
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Histórico
-              </span>
-            </div>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Consulte estágios em andamento ou encerrados, com unidade, supervisor,
-              ocorrências e relatório final.
-            </p>
-          </Link>
-
-          <Link
-            href="/coordenadoria/ocorrencias"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Ocorrências
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Controle
-              </span>
-            </div>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Acompanhe registros feitos pelas unidades durante a execução dos estágios.
-            </p>
-          </Link>
-
-          <Link
-            href="/coordenadoria/relatorios-finais"
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-bold text-slate-950 group-hover:text-teal-800">
-                Relatórios finais
-              </h3>
-              <span className="shrink-0 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-                Encerramento
-              </span>
-            </div>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Consulte relatórios registrados pelas unidades ao final dos estágios.
-            </p>
-          </Link>
-
-          {processActions.map((item) => (
-            <ActionCard key={item.title} {...item} />
-          ))}
-        </div>
-      </section>
-    </SystemShell>
+      <p className="mt-3 text-xs leading-5 text-slate-600">{description}</p>
+    </div>
   );
 }
 
+function FlowStep({
+  number,
+  title,
+  description,
+  active,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  active?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 shadow-sm ${
+        active
+          ? "border-teal-200 bg-teal-50/70"
+          : "border-slate-200 bg-white"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black ${
+            active
+              ? "bg-teal-700 text-white"
+              : "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {number}
+        </div>
+
+        <h3 className="text-sm font-black text-slate-950">{title}</h3>
+      </div>
+
+      <p className="mt-3 text-xs leading-5 text-slate-600">{description}</p>
+    </div>
+  );
+}
+
+function StatusLine({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-3 last:border-b-0">
+      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+export default async function CoordenadoriaAreaPage() {
+  const [
+    sondagensPendentes,
+    acordosEmAndamento,
+    estudantesEmAnalise,
+    autorizacoesPendentes,
+    estagiosAtivos,
+    ocorrenciasRegistradas,
+  ] = await Promise.all([
+    safeCount("inquiries", (query) =>
+      query.in("status", [
+        "enviada",
+        "recebida",
+        "em_analise",
+        "encaminhada_unidade",
+        "aguardando_unidade",
+        "complementacao_solicitada",
+      ]),
+    ),
+    safeCount("cooperation_agreements", (query) =>
+      query.in("status", [
+        "rascunho",
+        "em_analise",
+        "pendente_correcao",
+        "minuta_gerada",
+        "aguardando_assinatura",
+        "assinado",
+        "publicado",
+      ]),
+    ),
+    safeCount("student_presentations", (query) =>
+      query.in("status", [
+        "apresentado",
+        "em_analise",
+        "pendente_correcao",
+        "apto_para_assinatura",
+        "termo_assinado_anexado",
+        "documentos_validados",
+      ]),
+    ),
+    safeCount("internship_authorizations", (query) =>
+      query.in("status", [
+        "aguardando_unidade",
+        "aguardando_supervisor",
+        "pronto_para_autorizar",
+      ]),
+    ),
+    safeCount("internships", (query) =>
+      query.in("status", ["aguardando_inicio", "em_andamento"]),
+    ),
+    safeCount("internship_occurrences"),
+  ]);
+
+  const totalPendencias =
+    sondagensPendentes +
+    acordosEmAndamento +
+    estudantesEmAnalise +
+    autorizacoesPendentes;
+
+  return (
+    <SystemShell
+      areaLabel="Área da Coordenadoria"
+      title="Painel administrativo"
+      description="Visão geral do Programa de Estágio, com acompanhamento rápido das etapas que exigem análise, conferência ou providência da Coordenadoria."
+    >
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Pendências"
+          value={totalPendencias}
+          description="Itens que dependem de análise, conferência ou autorização."
+          Icon={AlertCircle}
+        />
+
+        <MetricCard
+          label="Sondagens"
+          value={sondagensPendentes}
+          description="Solicitações em análise ou aguardando retorno das unidades."
+          Icon={Layers3}
+        />
+
+        <MetricCard
+          label="Acordos"
+          value={acordosEmAndamento}
+          description="Minutas, conferências, assinaturas ou publicações pendentes."
+          Icon={FileSignature}
+        />
+
+        <MetricCard
+          label="Estágios ativos"
+          value={estagiosAtivos}
+          description="Estágios autorizados para início ou em acompanhamento."
+          Icon={GraduationCap}
+        />
+      </div>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-950">
+                Esteira do processo
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Leitura rápida das fases principais do fluxo administrativo.
+              </p>
+            </div>
+
+            <div className="rounded-full bg-teal-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-teal-700">
+              Fluxo
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <FlowStep
+              number="1"
+              title="Sondagem"
+              description="Instituição consulta possibilidade de campo e a unidade informa disponibilidade."
+              active={sondagensPendentes > 0}
+            />
+
+            <FlowStep
+              number="2"
+              title="Acordo"
+              description="Coordenadoria controla minuta, conferência da instituição, assinatura e publicação."
+              active={acordosEmAndamento > 0}
+            />
+
+            <FlowStep
+              number="3"
+              title="Apresentação"
+              description="Instituição apresenta estudante e documentos para análise do Termo de Compromisso."
+              active={estudantesEmAnalise > 0}
+            />
+
+            <FlowStep
+              number="4"
+              title="Autorização"
+              description="Coordenadoria libera formalmente o início após conferência completa."
+              active={autorizacoesPendentes > 0}
+            />
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-950">
+                Resumo operacional
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Quantitativo geral das principais frentes de trabalho.
+              </p>
+            </div>
+
+            <ListChecks className="h-5 w-5 text-teal-700" />
+          </div>
+
+          <div className="mt-2">
+            <StatusLine label="Sondagens pendentes" value={sondagensPendentes} />
+            <StatusLine label="Acordos em andamento" value={acordosEmAndamento} />
+            <StatusLine label="Estudantes em análise" value={estudantesEmAnalise} />
+            <StatusLine label="Autorizações pendentes" value={autorizacoesPendentes} />
+            <StatusLine label="Ocorrências registradas" value={ocorrenciasRegistradas} />
+          </div>
+        </section>
+      </div>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-2">
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black text-slate-950">
+                Controle por perfil
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                O menu lateral já apresenta apenas as áreas disponíveis ao
+                usuário logado. Este painel concentra a visão administrativa do
+                andamento geral do Programa de Estágio.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+              <Clock3 className="h-5 w-5" />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black text-slate-950">
+                Situação atual
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {totalPendencias > 0
+                  ? "Há itens aguardando análise da Coordenadoria. Utilize o menu lateral para acessar o módulo correspondente."
+                  : "No momento, não há pendências identificadas nos principais módulos acompanhados pelo painel."}
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </SystemShell>
+  );
+}
