@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SystemShell } from "@/components/system/SystemShell";
 import { CopyTextButton } from "@/components/system/CopyTextButton";
+import { FormattedDraftText } from "@/components/system/FormattedDraftText";
 import { getInstitutionAgreementsData } from "@/lib/queries/institution-agreements";
 import {
   approveAgreementDraft,
@@ -159,17 +160,16 @@ export default async function InstituicaoAcordoDetalhePage({
             {agreement.draft_text && (
               <CopyTextButton
                 text={agreement.draft_text}
-                label="Copiar minuta"
-                copiedLabel="Minuta copiada"
+                label="Copiar versão para publicação"
+                copiedLabel="Versão para publicação copiada"
+                anonymize
               />
             )}
           </div>
 
           {agreement.draft_text ? (
             <div className="max-h-[680px] overflow-auto p-4">
-              <pre className="whitespace-pre-wrap text-xs leading-5 text-slate-800">
-                {agreement.draft_text}
-              </pre>
+              <FormattedDraftText text={agreement.draft_text} />
             </div>
           ) : (
             <div className="p-5 text-sm font-semibold text-slate-600">
@@ -229,4 +229,7 @@ export default async function InstituicaoAcordoDetalhePage({
     </SystemShell>
   );
 }
+
+
+
 
