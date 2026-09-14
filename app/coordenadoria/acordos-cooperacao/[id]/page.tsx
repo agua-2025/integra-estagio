@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SystemShell } from "@/components/system/SystemShell";
 import { getCoordinationAgreementsData } from "@/lib/queries/coordination-agreements";
-import { updateCoordinationAgreement } from "../actions";
+import {
+  generateCoordinationAgreementDraft,
+  updateCoordinationAgreement,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -208,6 +211,41 @@ export default async function AcordoDetalhePage({ params }: AcordoDetalhePagePro
                 <p className="mt-1 whitespace-pre-wrap">{agreement.notes}</p>
               </div>
             )}
+
+            <div className="overflow-hidden rounded-lg border border-slate-200">
+              <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wide text-slate-700">
+                    Minuta do acordo
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Gerada com base no cadastro institucional validado, cursos e vigência do acordo.
+                  </p>
+                </div>
+
+                <form action={generateCoordinationAgreementDraft}>
+                  <input type="hidden" name="id" value={agreement.id} />
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
+                  >
+                    Gerar minuta
+                  </button>
+                </form>
+              </div>
+
+              {agreement.draft_text ? (
+                <div className="max-h-[520px] overflow-auto bg-white p-3">
+                  <pre className="whitespace-pre-wrap text-xs leading-5 text-slate-800">
+                    {agreement.draft_text}
+                  </pre>
+                </div>
+              ) : (
+                <div className="p-3 text-xs font-semibold text-slate-600">
+                  Nenhuma minuta gerada para este acordo.
+                </div>
+              )}
+            </div>
           </div>
 
           <form

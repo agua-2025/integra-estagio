@@ -24,6 +24,8 @@ export type CoordinationAgreementRow = {
   published_at: string | null;
   publication_reference: string | null;
   document_url: string | null;
+  draft_text: string | null;
+  draft_generated_at: string | null;
   notes: string | null;
   created_at: string;
   requested_area: string | null;
@@ -108,7 +110,7 @@ export async function getCoordinationAgreementsData(
   let agreementsQuery = supabase
     .from("cooperation_agreements")
     .select(
-      "id, institution_id, inquiry_id, status, legal_representative_name, institution_responsible_name, started_at, ended_at, signed_at, published_at, publication_reference, document_url, notes, created_at",
+      "id, institution_id, inquiry_id, status, legal_representative_name, institution_responsible_name, started_at, ended_at, signed_at, published_at, publication_reference, document_url, draft_text, draft_generated_at, notes, created_at",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -250,6 +252,8 @@ export async function getCoordinationAgreementsData(
     published_at: agreement.published_at,
     publication_reference: agreement.publication_reference,
     document_url: agreement.document_url,
+    draft_text: agreement.draft_text,
+    draft_generated_at: agreement.draft_generated_at,
     notes: agreement.notes,
     created_at: agreement.created_at,
     requested_area: inquiriesMap.get(agreement.inquiry_id)?.requested_area ?? null,
