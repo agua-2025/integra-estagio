@@ -3,7 +3,16 @@ import Link from "next/link";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PublicHeader } from "@/components/public/PublicHeader";
 
-export default function AcessoPage() {
+type AcessoPageProps = {
+  searchParams?: Promise<{
+    negado?: string;
+  }>;
+};
+
+export default async function AcessoPage({ searchParams }: AcessoPageProps) {
+  const params = await searchParams;
+  const accessDenied = params?.negado === "1";
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <PublicHeader />
@@ -26,12 +35,13 @@ export default function AcessoPage() {
           </p>
 
           <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">
-            Acesse o Integra Estágio.
+            {accessDenied ? "Acesso não autorizado." : "Acesse o Integra Estágio."}
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Entre com sua conta para acessar as funcionalidades disponíveis
-            conforme o seu perfil no Programa de Estágio.
+            {accessDenied
+              ? "A conta conectada não possui permissão para acessar esta área."
+              : "Entre com sua conta para acessar as funcionalidades disponíveis conforme o seu perfil no Programa de Estágio."}
           </p>
 
           <div className="mt-8 flex justify-center">
@@ -42,17 +52,6 @@ export default function AcessoPage() {
               Acessar sistema
             </Link>
           </div>
-        </div>
-
-        <div className="mt-12 w-full max-w-3xl rounded-3xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white p-7 text-center shadow-sm">
-          <h2 className="text-2xl font-bold text-slate-950">
-            Ainda não tem acesso?
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-            Solicite a criação ou liberação da sua conta à Coordenadoria
-            responsável pelo Programa de Estágio. Após a autenticação, o sistema
-            direcionará automaticamente para a área correspondente ao seu perfil.
-          </p>
         </div>
       </section>
 

@@ -27,8 +27,6 @@ export function LoginForm() {
     setIsLoading(true);
     setMessage("");
 
-    await supabase.auth.signOut();
-
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -87,4 +85,5 @@ export function LoginForm() {
     </form>
   );
 }
+
 
