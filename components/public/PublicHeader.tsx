@@ -55,7 +55,7 @@ export function PublicHeader() {
 
           <div className="hidden shrink-0 items-center gap-3 xl:flex">
             <Link
-              href="/acesso"
+              href="/login"
               className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
             >
               Acessar sistema
@@ -89,7 +89,7 @@ export function PublicHeader() {
                 ))}
 
                 <Link
-                  href="/acesso"
+                  href="/login"
                   className="mt-2 rounded-xl bg-teal-700 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-teal-800"
                 >
                   Acessar sistema
@@ -102,3 +102,4 @@ export function PublicHeader() {
     </header>
   );
 }
+
