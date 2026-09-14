@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SystemShell } from "@/components/system/SystemShell";
+import { CopyTextButton } from "@/components/system/CopyTextButton";
 import { getInstitutionAgreementsData } from "@/lib/queries/institution-agreements";
 import {
   approveAgreementDraft,
@@ -145,13 +146,23 @@ export default async function InstituicaoAcordoDetalhePage({
 
       <section className="grid gap-3 lg:grid-cols-[1fr_360px]">
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-2">
-            <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
-              Minuta do Acordo
-            </h2>
-            <p className="text-xs text-slate-500">
-              Texto gerado pela Coordenadoria para conferência prévia.
-            </p>
+          <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
+                Minuta do Acordo
+              </h2>
+              <p className="text-xs text-slate-500">
+                Texto gerado pela Coordenadoria para conferência prévia.
+              </p>
+            </div>
+
+            {agreement.draft_text && (
+              <CopyTextButton
+                text={agreement.draft_text}
+                label="Copiar minuta"
+                copiedLabel="Minuta copiada"
+              />
+            )}
           </div>
 
           {agreement.draft_text ? (
@@ -218,3 +229,4 @@ export default async function InstituicaoAcordoDetalhePage({
     </SystemShell>
   );
 }
+

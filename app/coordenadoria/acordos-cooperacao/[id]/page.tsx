@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SystemShell } from "@/components/system/SystemShell";
+import { CopyTextButton } from "@/components/system/CopyTextButton";
 import { getCoordinationAgreementsData } from "@/lib/queries/coordination-agreements";
 import {
   generateCoordinationAgreementDraft,
@@ -283,6 +284,14 @@ export default async function AcordoDetalhePage({ params }: AcordoDetalhePagePro
                     Gerar minuta
                   </button>
                 </form>
+
+                {agreement.draft_text && (
+                  <CopyTextButton
+                    text={agreement.draft_text}
+                    label="Copiar minuta"
+                    copiedLabel="Minuta copiada"
+                  />
+                )}
               </div>
 
               {agreement.draft_text ? (
@@ -445,3 +454,4 @@ export default async function AcordoDetalhePage({ params }: AcordoDetalhePagePro
     </SystemShell>
   );
 }
+
