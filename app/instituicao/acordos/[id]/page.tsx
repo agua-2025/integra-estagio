@@ -193,18 +193,18 @@ export default async function InstituicaoAcordoDetalhePage({
                   </span>
                   <textarea
                     name="notes"
-                    rows={5}
+                    rows={3}
                     required
                     className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                    placeholder="Descreva o que precisa ser corrigido na minuta."
+                    placeholder="Ex.: favor corrigir a cláusula 10."
                   />
                 </label>
 
                 <button
                   type="submit"
-                  className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-amber-800 transition hover:bg-amber-100"
+                  className="w-full rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-red-700 transition hover:bg-red-100"
                 >
-                  Solicitar correção
+                  Enviar pedido de correção
                 </button>
               </form>
             </div>

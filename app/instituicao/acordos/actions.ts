@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 function normalizeText(value: FormDataEntryValue | null) {
@@ -82,7 +83,9 @@ export async function approveAgreementDraft(formData: FormData) {
 
   await getInstitutionAgreement(supabase, id, institutionId);
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+
+  const { error } = await admin
     .from("cooperation_agreements")
     .update({
       institution_review_status: "aprovada",
@@ -122,7 +125,9 @@ export async function requestAgreementDraftCorrection(formData: FormData) {
 
   await getInstitutionAgreement(supabase, id, institutionId);
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+
+  const { error } = await admin
     .from("cooperation_agreements")
     .update({
       institution_review_status: "correcao_solicitada",

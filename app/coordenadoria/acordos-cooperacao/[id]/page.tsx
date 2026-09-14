@@ -52,6 +52,35 @@ function statusClass(status: string) {
   return "bg-slate-100 text-slate-600 ring-1 ring-slate-200";
 }
 
+function institutionReviewLabel(status: string | null) {
+  const labels: Record<string, string> = {
+    aguardando_conferencia: "Aguardando conferência da instituição",
+    aprovada: "Minuta aprovada pela instituição",
+    correcao_solicitada: "Correção solicitada pela instituição",
+  };
+
+  if (!status) return "Minuta ainda não enviada para conferência";
+
+  return labels[status] ?? status;
+}
+
+function institutionReviewClass(status: string | null) {
+  if (status === "aprovada") {
+    return "border-teal-200 bg-teal-50 text-teal-800";
+  }
+
+  if (status === "correcao_solicitada") {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
+  if (status === "aguardando_conferencia") {
+    return "border-amber-200 bg-amber-50 text-amber-800";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-600";
+}
+
+
 function formatDate(value: string | null) {
   if (!value) return "-";
 
@@ -203,6 +232,28 @@ export default async function AcordoDetalhePage({ params }: AcordoDetalhePagePro
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <div
+              className={`rounded-lg border px-3 py-2 text-xs ${institutionReviewClass(
+                agreement.institution_review_status,
+              )}`}
+            >
+              <p className="font-black uppercase tracking-wide">
+                Conferência da instituição
+              </p>
+              <p className="mt-1 font-semibold">
+                {institutionReviewLabel(agreement.institution_review_status)}
+              </p>
+
+              {agreement.institution_review_notes && (
+                <div className="mt-2 rounded-lg border border-current/20 bg-white/60 px-3 py-2">
+                  <p className="font-bold">Observação da instituição</p>
+                  <p className="mt-1 whitespace-pre-wrap leading-5">
+                    {agreement.institution_review_notes}
+                  </p>
+                </div>
+              )}
             </div>
 
             {agreement.notes && (

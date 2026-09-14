@@ -50,6 +50,50 @@ function statusClass(status: string) {
   return "bg-slate-100 text-slate-600 ring-1 ring-slate-200";
 }
 
+function effectiveInstitutionReviewStatus(agreement: {
+  draft_text: string | null;
+  institution_review_status: string | null;
+}) {
+  if (agreement.institution_review_status) {
+    return agreement.institution_review_status;
+  }
+
+  if (agreement.draft_text) {
+    return "aguardando_conferencia";
+  }
+
+  return null;
+}
+
+function institutionReviewLabel(status: string | null) {
+  const labels: Record<string, string> = {
+    aguardando_conferencia: "Aguardando",
+    aprovada: "Aprovada",
+    correcao_solicitada: "Correção",
+  };
+
+  if (!status) return "Não enviada";
+
+  return labels[status] ?? status;
+}
+
+function institutionReviewClass(status: string | null) {
+  if (status === "aprovada") {
+    return "bg-teal-50 text-teal-800 ring-1 ring-teal-200";
+  }
+
+  if (status === "correcao_solicitada") {
+    return "bg-red-50 text-red-700 ring-1 ring-red-200";
+  }
+
+  if (status === "aguardando_conferencia") {
+    return "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+  }
+
+  return "bg-slate-100 text-slate-600 ring-1 ring-slate-200";
+}
+
+
 function formatDate(value: string | null) {
   if (!value) return "-";
 
@@ -88,6 +132,9 @@ export default async function AcordosCooperacaoPage({
     ["rascunho", "em_analise", "pendente_correcao"].includes(item.status),
   ).length;
   const readyCount = agreements.filter((item) => item.is_ready_for_presentations).length;
+  const correctionCount = agreements.filter(
+    (item) => item.institution_review_status === "correcao_solicitada",
+  ).length;
 
   return (
     <SystemShell
@@ -139,7 +186,7 @@ export default async function AcordosCooperacaoPage({
       )}
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="grid border-b border-slate-200 md:grid-cols-5">
+        <div className="grid border-b border-slate-200 md:grid-cols-6">
           <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
             <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
               Exibidos
@@ -166,6 +213,13 @@ export default async function AcordosCooperacaoPage({
               Ativos
             </p>
             <p className="text-lg font-black text-teal-700">{activeCount}</p>
+          </div>
+
+          <div className="border-b border-slate-100 px-4 py-2 md:border-b-0 md:border-r">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Correções
+            </p>
+            <p className="text-lg font-black text-red-700">{correctionCount}</p>
           </div>
 
           <div className="px-4 py-2">
@@ -260,14 +314,15 @@ export default async function AcordosCooperacaoPage({
             <table className="w-full table-fixed border-collapse text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="w-[28%] px-2 py-1.5 font-black">Instituição</th>
-                  <th className="w-[11%] px-2 py-1.5 font-black">Situação</th>
-                  <th className="w-[15%] px-2 py-1.5 font-black">Vigência</th>
-                  <th className="w-[11%] px-2 py-1.5 font-black">Assinatura</th>
-                  <th className="w-[13%] px-2 py-1.5 font-black">Publicação</th>
-                  <th className="w-[9%] px-2 py-1.5 font-black">Cursos</th>
+                  <th className="w-[23%] px-2 py-1.5 font-black">Instituição</th>
+                  <th className="w-[10%] px-2 py-1.5 font-black">Situação</th>
+                  <th className="w-[13%] px-2 py-1.5 font-black">Vigência</th>
+                  <th className="w-[10%] px-2 py-1.5 font-black">Assinatura</th>
+                  <th className="w-[12%] px-2 py-1.5 font-black">Publicação</th>
+                  <th className="w-[8%] px-2 py-1.5 font-black">Cursos</th>
+                  <th className="w-[10%] px-2 py-1.5 font-black">Conferência</th>
                   <th className="w-[7%] px-2 py-1.5 font-black">Uso</th>
-                  <th className="w-[6%] px-2 py-1.5 text-right font-black">Ação</th>
+                  <th className="w-[7%] px-2 py-1.5 text-right font-black">Ação</th>
                 </tr>
               </thead>
 
@@ -316,6 +371,27 @@ export default async function AcordosCooperacaoPage({
                       {agreement.course_names.length > 0
                         ? `${agreement.course_names.length} curso(s)`
                         : "-"}
+                    </td>
+
+                    <td className="px-2 py-1.5">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${institutionReviewClass(
+                          effectiveInstitutionReviewStatus(agreement),
+                        )}`}
+                      >
+                        {institutionReviewLabel(effectiveInstitutionReviewStatus(agreement))}
+                      </span>
+                      {effectiveInstitutionReviewStatus(agreement) === "correcao_solicitada" &&
+                        agreement.institution_review_notes && (
+                          <details className="mt-1 text-[11px] text-red-700">
+                            <summary className="cursor-pointer font-bold">
+                              Ver motivo
+                            </summary>
+                            <p className="mt-1 max-w-[220px] whitespace-pre-wrap leading-5">
+                              {agreement.institution_review_notes}
+                            </p>
+                          </details>
+                        )}
                     </td>
 
                     <td className="px-2 py-1.5">
