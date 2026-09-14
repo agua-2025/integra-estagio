@@ -126,7 +126,7 @@ export default async function AcordosCooperacaoPage({
     <SystemShell
       areaLabel="Coordenadoria"
       title="Acordos de Cooperação"
-      description="Controle acordos, vigência, assinatura, publicação e liberação para apresentação de estudantes."
+      description="Controle acordos, vigência, assinatura, publicação e liberação para apresentação de estagiários."
     >
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
@@ -271,7 +271,7 @@ export default async function AcordosCooperacaoPage({
               Registrar novo acordo
             </span>
             <span className="ml-3 text-xs font-medium text-slate-500">
-              Selecionar instituição e cursos abrangidos
+              Selecionar instituição validada e cursos abrangidos
             </span>
           </summary>
 
@@ -382,27 +382,9 @@ export default async function AcordosCooperacaoPage({
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
-                <label className="grid gap-1">
-                  <span className="text-xs font-bold text-slate-600">
-                    Representante legal
-                  </span>
-                  <input
-                    name="legal_representative_name"
-                    defaultValue={editingAgreement.legal_representative_name ?? ""}
-                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                  />
-                </label>
+                
 
-                <label className="grid gap-1">
-                  <span className="text-xs font-bold text-slate-600">
-                    Responsável da instituição
-                  </span>
-                  <input
-                    name="institution_responsible_name"
-                    defaultValue={editingAgreement.institution_responsible_name ?? ""}
-                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                  />
-                </label>
+                
               </div>
 
               <label className="grid gap-1">
@@ -601,7 +583,7 @@ export default async function AcordosCooperacaoPage({
         )}
 
         <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium text-slate-500">
-          A apresentação de estudantes será liberada somente quando o acordo estiver ativo, assinado, publicado e dentro da vigência.
+          A apresentação de estagiários será liberada somente quando o acordo estiver ativo, assinado, publicado, dentro da vigência e vinculado a instituição validada.
         </div>
       </section>
     </SystemShell>

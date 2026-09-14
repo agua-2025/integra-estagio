@@ -179,12 +179,6 @@ export async function createCoordinationAgreement(formData: FormData) {
   const status = normalizeText(formData.get("status")) ?? "em_analise";
   const startedAt = normalizeDate(formData.get("started_at"));
   const endedAt = normalizeDate(formData.get("ended_at"));
-  const legalRepresentativeName = normalizeText(
-    formData.get("legal_representative_name"),
-  );
-  const institutionResponsibleName = normalizeText(
-    formData.get("institution_responsible_name"),
-  );
   const notes = normalizeText(formData.get("notes"));
 
   if (!institutionId) {
@@ -209,12 +203,53 @@ export async function createCoordinationAgreement(formData: FormData) {
 
   validateDateRange(startedAt, endedAt);
 
-  if (!legalRepresentativeName) {
-    throw new Error("Informe o representante legal da instituição.");
+  const { data: institution, error: institutionError } = await supabase
+    .from("institutions")
+    .select(
+      "id, status, name, legal_name, cnpj, email, phone, address_line, address_number, neighborhood, city, state, zip_code, legal_representative_name, legal_representative_role, legal_representative_cpf, legal_representative_email, legal_representative_phone, internship_sector_contact_name, internship_sector_contact_email, internship_sector_contact_phone",
+    )
+    .eq("id", institutionId)
+    .single();
+
+  if (institutionError || !institution) {
+    throw new Error(
+      institutionError?.message ?? "Instituição não encontrada para atualização do acordo.",
+    );
   }
 
-  if (!institutionResponsibleName) {
-    throw new Error("Informe o responsável institucional pelo estágio.");
+  if (institution.status !== "ativa") {
+    throw new Error("O acordo somente pode ser mantido para instituição ativa/validada.");
+  }
+
+  const requiredInstitutionFields = [
+    [institution.legal_name, "razão social"],
+    [institution.cnpj, "CNPJ"],
+    [institution.email, "e-mail institucional"],
+    [institution.phone, "telefone institucional"],
+    [institution.address_line, "endereço"],
+    [institution.address_number, "número do endereço"],
+    [institution.neighborhood, "bairro"],
+    [institution.city, "cidade"],
+    [institution.state, "UF"],
+    [institution.zip_code, "CEP"],
+    [institution.legal_representative_name, "representante legal"],
+    [institution.legal_representative_role, "cargo do representante legal"],
+    [institution.legal_representative_cpf, "CPF do representante legal"],
+    [institution.legal_representative_email, "e-mail do representante legal"],
+    [institution.legal_representative_phone, "telefone do representante legal"],
+    [institution.internship_sector_contact_name, "responsável pelo setor de estágio"],
+    [institution.internship_sector_contact_email, "e-mail do setor de estágio"],
+    [institution.internship_sector_contact_phone, "telefone do setor de estágio"],
+  ];
+
+  const missingInstitutionField = requiredInstitutionFields.find(
+    ([value]) => typeof value !== "string" || value.trim().length === 0,
+  );
+
+  if (missingInstitutionField) {
+    throw new Error(
+      `Antes de atualizar o acordo, complete o cadastro da instituição: ${missingInstitutionField[1]}.`,
+    );
   }
 
   const { data: viableCourseInquiries, error: viableCoursesError } = await supabase
@@ -255,8 +290,8 @@ export async function createCoordinationAgreement(formData: FormData) {
       institution_id: institutionId,
       inquiry_id: originInquiry.id,
       status,
-      legal_representative_name: legalRepresentativeName,
-      institution_responsible_name: institutionResponsibleName,
+      legal_representative_name: institution.legal_representative_name,
+      institution_responsible_name: institution.internship_sector_contact_name,
       started_at: startedAt,
       ended_at: endedAt,
       notes,
@@ -309,12 +344,6 @@ export async function updateCoordinationAgreement(formData: FormData) {
 
   const id = normalizeText(formData.get("id"));
   const status = normalizeText(formData.get("status"));
-  const legalRepresentativeName = normalizeText(
-    formData.get("legal_representative_name"),
-  );
-  const institutionResponsibleName = normalizeText(
-    formData.get("institution_responsible_name"),
-  );
   const startedAt = normalizeDate(formData.get("started_at"));
   const endedAt = normalizeDate(formData.get("ended_at"));
   const signedAt = normalizeDate(formData.get("signed_at"));
@@ -327,9 +356,22 @@ export async function updateCoordinationAgreement(formData: FormData) {
     throw new Error("Acordo não identificado.");
   }
 
+  const { data: agreement, error: agreementError } = await supabase
+    .from("cooperation_agreements")
+    .select("id, institution_id, status, document_url")
+    .eq("id", id)
+    .single();
+
+  if (agreementError || !agreement) {
+    throw new Error(
+      agreementError?.message ?? "Acordo não encontrado para atualização.",
+    );
+  }
+
   if (isUploadedFile(documentFile)) {
     documentUrl = await uploadAgreementDocument(supabase, id, documentFile);
   }
+
   const notes = normalizeText(formData.get("notes"));
 
   if (!id) {
@@ -350,12 +392,53 @@ export async function updateCoordinationAgreement(formData: FormData) {
 
   validateDateRange(startedAt, endedAt);
 
-  if (!legalRepresentativeName) {
-    throw new Error("Informe o representante legal da instituição.");
+  const { data: institution, error: institutionError } = await supabase
+    .from("institutions")
+    .select(
+      "id, status, name, legal_name, cnpj, email, phone, address_line, address_number, neighborhood, city, state, zip_code, legal_representative_name, legal_representative_role, legal_representative_cpf, legal_representative_email, legal_representative_phone, internship_sector_contact_name, internship_sector_contact_email, internship_sector_contact_phone",
+    )
+    .eq("id", agreement.institution_id)
+    .single();
+
+  if (institutionError || !institution) {
+    throw new Error(
+      institutionError?.message ?? "Instituição não encontrada para atualização do acordo.",
+    );
   }
 
-  if (!institutionResponsibleName) {
-    throw new Error("Informe o responsável institucional pelo estágio.");
+  if (institution.status !== "ativa") {
+    throw new Error("O acordo somente pode ser mantido para instituição ativa/validada.");
+  }
+
+  const requiredInstitutionFields = [
+    [institution.legal_name, "razão social"],
+    [institution.cnpj, "CNPJ"],
+    [institution.email, "e-mail institucional"],
+    [institution.phone, "telefone institucional"],
+    [institution.address_line, "endereço"],
+    [institution.address_number, "número do endereço"],
+    [institution.neighborhood, "bairro"],
+    [institution.city, "cidade"],
+    [institution.state, "UF"],
+    [institution.zip_code, "CEP"],
+    [institution.legal_representative_name, "representante legal"],
+    [institution.legal_representative_role, "cargo do representante legal"],
+    [institution.legal_representative_cpf, "CPF do representante legal"],
+    [institution.legal_representative_email, "e-mail do representante legal"],
+    [institution.legal_representative_phone, "telefone do representante legal"],
+    [institution.internship_sector_contact_name, "responsável pelo setor de estágio"],
+    [institution.internship_sector_contact_email, "e-mail do setor de estágio"],
+    [institution.internship_sector_contact_phone, "telefone do setor de estágio"],
+  ];
+
+  const missingInstitutionField = requiredInstitutionFields.find(
+    ([value]) => typeof value !== "string" || value.trim().length === 0,
+  );
+
+  if (missingInstitutionField) {
+    throw new Error(
+      `Antes de atualizar o acordo, complete o cadastro da instituição: ${missingInstitutionField[1]}.`,
+    );
   }
 
   validateActiveAgreement({
@@ -388,8 +471,8 @@ export async function updateCoordinationAgreement(formData: FormData) {
     .from("cooperation_agreements")
     .update({
       status,
-      legal_representative_name: legalRepresentativeName,
-      institution_responsible_name: institutionResponsibleName,
+      legal_representative_name: institution.legal_representative_name,
+      institution_responsible_name: institution.internship_sector_contact_name,
       started_at: startedAt,
       ended_at: endedAt,
       signed_at: signedAt,
