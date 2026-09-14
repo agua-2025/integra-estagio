@@ -848,6 +848,10 @@ ${formatUpper(institutionName)}
       draft_text: draftText,
       draft_generated_at: new Date().toISOString(),
       draft_generated_by: profileId,
+      institution_review_status: "aguardando_conferencia",
+      institution_review_notes: null,
+      institution_reviewed_at: null,
+      institution_reviewed_by: null,
       status: "minuta_gerada",
       reviewed_by: profileId,
     })

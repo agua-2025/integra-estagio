@@ -22,6 +22,11 @@ export type InstitutionAgreementRow = {
   published_at: string | null;
   publication_reference: string | null;
   document_url: string | null;
+  draft_text: string | null;
+  draft_generated_at: string | null;
+  institution_review_status: string | null;
+  institution_review_notes: string | null;
+  institution_reviewed_at: string | null;
   notes: string | null;
   created_at: string;
   requested_area: string | null;
@@ -80,7 +85,7 @@ export async function getInstitutionAgreementsData(
   let agreementsQuery = supabase
     .from("cooperation_agreements")
     .select(
-      "id, institution_id, inquiry_id, status, legal_representative_name, institution_responsible_name, started_at, ended_at, signed_at, published_at, publication_reference, document_url, notes, created_at",
+      "id, institution_id, inquiry_id, status, legal_representative_name, institution_responsible_name, started_at, ended_at, signed_at, published_at, publication_reference, document_url, draft_text, draft_generated_at, institution_review_status, institution_review_notes, institution_reviewed_at, notes, created_at",
     )
     .eq("institution_id", profile.institution_id)
     .order("created_at", { ascending: false })
@@ -196,6 +201,11 @@ export async function getInstitutionAgreementsData(
       published_at: agreement.published_at,
       publication_reference: agreement.publication_reference,
       document_url: agreement.document_url,
+      draft_text: agreement.draft_text,
+      draft_generated_at: agreement.draft_generated_at,
+      institution_review_status: agreement.institution_review_status,
+      institution_review_notes: agreement.institution_review_notes,
+      institution_reviewed_at: agreement.institution_reviewed_at,
       notes: agreement.notes,
       created_at: agreement.created_at,
       requested_area: inquiriesMap.get(agreement.inquiry_id)?.requested_area ?? null,

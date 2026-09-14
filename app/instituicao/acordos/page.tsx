@@ -246,13 +246,14 @@ export default async function InstituicaoAcordosPage({
             <table className="w-full table-fixed border-collapse text-left text-xs">
               <thead className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="w-[18%] px-2 py-1.5 font-black">Acordo</th>
-                  <th className="w-[12%] px-2 py-1.5 font-black">Situação</th>
-                  <th className="w-[16%] px-2 py-1.5 font-black">Vigência</th>
-                  <th className="w-[17%] px-2 py-1.5 font-black">Formalização</th>
-                  <th className="w-[12%] px-2 py-1.5 font-black">Cursos</th>
-                  <th className="w-[10%] px-2 py-1.5 font-black">Uso</th>
-                  <th className="w-[15%] px-2 py-1.5 font-black">Documento</th>
+                  <th className="w-[16%] px-2 py-1.5 font-black">Acordo</th>
+                  <th className="w-[11%] px-2 py-1.5 font-black">Situação</th>
+                  <th className="w-[15%] px-2 py-1.5 font-black">Vigência</th>
+                  <th className="w-[15%] px-2 py-1.5 font-black">Formalização</th>
+                  <th className="w-[11%] px-2 py-1.5 font-black">Cursos</th>
+                  <th className="w-[9%] px-2 py-1.5 font-black">Uso</th>
+                  <th className="w-[13%] px-2 py-1.5 font-black">Documento</th>
+                  <th className="w-[10%] px-2 py-1.5 text-right font-black">Minuta</th>
                 </tr>
               </thead>
 
@@ -367,6 +368,21 @@ export default async function InstituicaoAcordosPage({
                         </details>
                       )}
                     </td>
+
+                    <td className="px-2 py-1.5 align-top text-right">
+                      {agreement.draft_text ? (
+                        <Link
+                          href={`/instituicao/acordos/${agreement.id}`}
+                          className="inline-flex rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                        >
+                          Conferir
+                        </Link>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-slate-400">
+                          -
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -375,7 +391,7 @@ export default async function InstituicaoAcordosPage({
         )}
 
         <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium text-slate-500">
-          A apresentação de estudantes exige acordo ativo, assinado, publicado e dentro da vigência.
+          A apresentação de estagiários exige acordo ativo, assinado, publicado e dentro da vigência.
         </div>
       </section>
     </SystemShell>
