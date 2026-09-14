@@ -29,6 +29,11 @@ export type InstitutionAreaInstitution = {
   zip_code: string | null;
   legal_representative_name: string | null;
   legal_representative_role: string | null;
+  legal_representative_cpf: string | null;
+  legal_representative_rg: string | null;
+  legal_representative_rg_issuer: string | null;
+  legal_representative_email: string | null;
+  legal_representative_phone: string | null;
   internship_sector_contact_name: string | null;
   internship_sector_contact_email: string | null;
   internship_sector_contact_phone: string | null;
@@ -62,6 +67,11 @@ const institutionSelect = `
   zip_code,
   legal_representative_name,
   legal_representative_role,
+  legal_representative_cpf,
+  legal_representative_rg,
+  legal_representative_rg_issuer,
+  legal_representative_email,
+  legal_representative_phone,
   internship_sector_contact_name,
   internship_sector_contact_email,
   internship_sector_contact_phone

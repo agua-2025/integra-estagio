@@ -14,10 +14,10 @@ type InstituicaoCadastroPageProps = {
 };
 
 const inputClass =
-  "h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100";
+  "h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100";
 
 const labelClass = "grid gap-1";
-const spanClass = "text-xs font-bold text-slate-600";
+const spanClass = "text-[11px] font-semibold text-slate-600";
 
 export default async function InstituicaoCadastroPage({
   searchParams,
@@ -38,7 +38,7 @@ export default async function InstituicaoCadastroPage({
       title="Dados Institucionais"
       description="Cadastro formal da instituição para validação da Coordenadoria."
     >
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/instituicao"
           className="text-sm font-semibold text-teal-700 hover:text-teal-900"
@@ -71,20 +71,20 @@ export default async function InstituicaoCadastroPage({
         </section>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <form action={formAction}>
           {institution && <input type="hidden" name="id" value={institution.id} />}
 
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="border-b border-slate-200 bg-slate-50 px-3 py-2">
             <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
               Identificação da instituição
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-0.5 text-[11px] text-slate-500">
               Dados principais da instituição de ensino.
             </p>
           </div>
 
-          <div className="grid gap-3 px-4 py-4 lg:grid-cols-4">
+          <div className="grid gap-2 px-3 py-3 lg:grid-cols-4">
             <label className={`${labelClass} lg:col-span-4`}>
               <span className={spanClass}>Nome da instituição</span>
               <input
@@ -156,16 +156,16 @@ export default async function InstituicaoCadastroPage({
             </label>
           </div>
 
-          <div className="border-y border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="border-y border-slate-200 bg-slate-50 px-3 py-2">
             <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
               Endereço
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-0.5 text-[11px] text-slate-500">
               Localização da instituição.
             </p>
           </div>
 
-          <div className="grid gap-3 px-4 py-4 lg:grid-cols-6">
+          <div className="grid gap-2 px-3 py-3 lg:grid-cols-6">
             <label className={`${labelClass} lg:col-span-3`}>
               <span className={spanClass}>Endereço</span>
               <input
@@ -246,16 +246,16 @@ export default async function InstituicaoCadastroPage({
             </label>
           </div>
 
-          <div className="border-y border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="border-y border-slate-200 bg-slate-50 px-3 py-2">
             <h2 className="text-sm font-black uppercase tracking-wide text-slate-700">
               Representação e setor de estágio
             </h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-0.5 text-[11px] text-slate-500">
               Responsáveis formais e contato operacional para acompanhamento dos estágios.
             </p>
           </div>
 
-          <div className="grid gap-3 px-4 py-4 lg:grid-cols-4">
+          <div className="grid gap-2 px-3 py-3 lg:grid-cols-4">
             <label className={`${labelClass} lg:col-span-2`}>
               <span className={spanClass}>Representante legal</span>
               <input
@@ -277,6 +277,70 @@ export default async function InstituicaoCadastroPage({
                 placeholder="Ex.: Diretor(a), Reitor(a), Coordenador(a)"
               />
             </label>
+
+            <label className={labelClass}>
+              <span className={spanClass}>CPF do representante</span>
+              <MaskedInput
+                name="legal_representative_cpf"
+                mask="cpf"
+                disabled={!canEditInstitution}
+                defaultValue={institution?.legal_representative_cpf ?? ""}
+                className={inputClass}
+                placeholder="000.000.000-00"
+              />
+            </label>
+
+            <label className={labelClass}>
+              <span className={spanClass}>RG/documento</span>
+              <input
+                name="legal_representative_rg"
+                disabled={!canEditInstitution}
+                defaultValue={institution?.legal_representative_rg ?? ""}
+                className={inputClass}
+                placeholder="Número do documento"
+              />
+            </label>
+
+            <label className={labelClass}>
+              <span className={spanClass}>Órgão expedidor</span>
+              <input
+                name="legal_representative_rg_issuer"
+                disabled={!canEditInstitution}
+                defaultValue={institution?.legal_representative_rg_issuer ?? ""}
+                className={inputClass}
+                placeholder="Ex.: SSP/MT"
+              />
+            </label>
+
+            <label className={labelClass}>
+              <span className={spanClass}>E-mail do representante</span>
+              <input
+                name="legal_representative_email"
+                type="email"
+                disabled={!canEditInstitution}
+                defaultValue={institution?.legal_representative_email ?? ""}
+                className={inputClass}
+                placeholder="representante@instituicao.com"
+              />
+            </label>
+
+            <label className={labelClass}>
+              <span className={spanClass}>Telefone do representante</span>
+              <MaskedInput
+                name="legal_representative_phone"
+                mask="phone"
+                disabled={!canEditInstitution}
+                defaultValue={institution?.legal_representative_phone ?? ""}
+                className={inputClass}
+                placeholder="(65) 00000-0000"
+              />
+            </label>
+
+            <div className="lg:col-span-4 border-t border-slate-100 pt-3">
+              <p className="text-xs font-black uppercase tracking-wide text-slate-500">
+                Contato operacional dos estágios
+              </p>
+            </div>
 
             <label className={`${labelClass} lg:col-span-2`}>
               <span className={spanClass}>Responsável pelo setor de estágio</span>
@@ -320,17 +384,17 @@ export default async function InstituicaoCadastroPage({
                 rows={2}
                 disabled={!canEditInstitution}
                 defaultValue={institution?.notes ?? ""}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs outline-none transition disabled:bg-slate-100 disabled:text-slate-500 focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                 placeholder="Informe dados úteis para análise da Coordenadoria."
               />
             </label>
           </div>
 
           {canEditInstitution && (
-            <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="border-t border-slate-200 bg-slate-50 px-3 py-2">
               <button
                 type="submit"
-                className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800"
+                className="rounded-lg bg-teal-700 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800"
               >
                 {institution ? "Atualizar dados" : "Enviar cadastro para análise"}
               </button>

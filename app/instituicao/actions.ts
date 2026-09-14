@@ -48,6 +48,21 @@ function getInstitutionPayload(formData: FormData) {
     legal_representative_role: normalizeText(
       formData.get("legal_representative_role"),
     ),
+    legal_representative_cpf: normalizeText(
+      formData.get("legal_representative_cpf"),
+    ),
+    legal_representative_rg: normalizeText(
+      formData.get("legal_representative_rg"),
+    ),
+    legal_representative_rg_issuer: normalizeText(
+      formData.get("legal_representative_rg_issuer"),
+    ),
+    legal_representative_email: normalizeText(
+      formData.get("legal_representative_email"),
+    ),
+    legal_representative_phone: normalizeText(
+      formData.get("legal_representative_phone"),
+    ),
     internship_sector_contact_name: normalizeText(
       formData.get("internship_sector_contact_name"),
     ),
