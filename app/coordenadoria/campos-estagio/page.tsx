@@ -195,30 +195,26 @@ export default async function CoordenadoriaCamposEstagioPage({
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="max-h-[620px] overflow-auto">
             <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500 shadow-sm">
                 <tr>
-                  <th className="px-5 py-3 font-black">Campo</th>
-                  <th className="px-5 py-3 font-black">Área</th>
-                  <th className="px-5 py-3 font-black">Vagas</th>
-                  <th className="px-5 py-3 font-black">Turno</th>
-                  <th className="px-5 py-3 font-black">Publicação</th>
-                  <th className="px-5 py-3 font-black">Status</th>
-                  <th className="px-5 py-3 text-right font-black">Ações</th>
+                  <th className="px-5 py-3 font-bold">Campo</th>
+                  <th className="px-5 py-3 font-bold">Área</th>
+                  <th className="px-5 py-3 font-bold">Vagas</th>
+                  <th className="px-5 py-3 font-bold">Turno</th>
+                  <th className="px-5 py-3 font-bold">Publicação</th>
+                  <th className="px-5 py-3 font-bold">Status</th>
+                  <th className="px-5 py-3 text-right font-bold">Ações</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-slate-100">
                 {fields.map((field) => (
                   <tr key={field.id} className="transition hover:bg-slate-50">
-                    <td className="px-5 py-4">
-                      <p className="font-black text-slate-950">{field.title}</p>
-                      {field.description && (
-                        <p className="mt-1 line-clamp-2 max-w-md text-xs leading-5 text-slate-500">
-                          {field.description}
-                        </p>
-                      )}
+                    <td className="px-5 py-3">
+                      <p className="text-sm font-medium text-slate-800">{field.title}</p>
+
                     </td>
 
                     <td className="px-5 py-4 text-slate-700">
@@ -233,7 +229,7 @@ export default async function CoordenadoriaCamposEstagioPage({
                       {field.shift ?? "A definir"}
                     </td>
 
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-3">
                       <span
                         className={
                           field.is_public
@@ -250,7 +246,7 @@ export default async function CoordenadoriaCamposEstagioPage({
                       </span>
                     </td>
 
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-3">
                       <span
                         className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${statusClass(
                           field.status,
@@ -260,11 +256,11 @@ export default async function CoordenadoriaCamposEstagioPage({
                       </span>
                     </td>
 
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap justify-end gap-2">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                         <Link
                           href={`/coordenadoria/campos-estagio/${field.id}`}
-                          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                          className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
                         >
                           Editar
                         </Link>
@@ -278,7 +274,7 @@ export default async function CoordenadoriaCamposEstagioPage({
                           />
                           <button
                             type="submit"
-                            className="inline-flex items-center gap-1 rounded-lg bg-teal-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-teal-800"
+                            className="inline-flex items-center gap-1 rounded-lg bg-teal-700 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-teal-800"
                           >
                             {field.is_public ? (
                               <EyeOff className="h-3.5 w-3.5" />
@@ -295,7 +291,7 @@ export default async function CoordenadoriaCamposEstagioPage({
                             <input type="hidden" name="status" value="ativo" />
                             <button
                               type="submit"
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
                             >
                               <ToggleRight className="h-3.5 w-3.5" />
                               Ativar
@@ -313,7 +309,7 @@ export default async function CoordenadoriaCamposEstagioPage({
                             />
                             <button
                               type="submit"
-                              className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-50"
+                              className="rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-bold text-amber-700 transition hover:bg-amber-50"
                             >
                               Suspender
                             </button>
@@ -326,7 +322,7 @@ export default async function CoordenadoriaCamposEstagioPage({
                             <input type="hidden" name="status" value="inativo" />
                             <button
                               type="submit"
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-50"
                             >
                               <ToggleLeft className="h-3.5 w-3.5" />
                               Inativar
@@ -362,3 +358,7 @@ export default async function CoordenadoriaCamposEstagioPage({
     </SystemShell>
   );
 }
+
+
+
+
