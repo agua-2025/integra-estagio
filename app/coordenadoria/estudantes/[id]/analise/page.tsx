@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SystemShell } from "@/components/system/SystemShell";
 import { createClient } from "@/lib/supabase/server";
+import { calculateAuthorizationPlan, formatPlanningMinutes } from "@/lib/authorization-planning";
 import {
   releaseStudentAccess,
   updateCommitmentTermReview,
@@ -305,7 +306,40 @@ export default async function AnaliseEstagiarioPage({
     !dateIsBefore(commitmentTerm.insurance_valid_until, commitmentTerm.internship_end_date) &&
     !dateIsBefore(commitmentTerm.internship_start_date, commitmentTerm.insurance_valid_from);
 
-  const canAdvance = Boolean(requiredDocumentsOk && commitmentTermOk && insuranceCoversPeriod);
+  const { data: calendarExceptions, error: calendarError } =
+    commitmentTerm && presentation.municipal_unit_id
+      ? await supabase
+          .from("unit_calendar_exceptions")
+          .select("start_date, end_date")
+          .or(
+            `municipal_unit_id.is.null,municipal_unit_id.eq.${presentation.municipal_unit_id}`
+          )
+      : { data: null, error: null };
+
+  const planningRequiredHours = Number(presentation.required_workload ?? 0);
+  const planningTermHours = Number(commitmentTerm?.required_workload ?? 0);
+
+  const termPlan = commitmentTerm && !calendarError
+    ? calculateAuthorizationPlan({
+        startDate: commitmentTerm.internship_start_date ?? "",
+        endDate: commitmentTerm.internship_end_date ?? "",
+        weeklyDays: commitmentTerm.weekly_days ?? [],
+        startTime: commitmentTerm.daily_start_time ?? "",
+        endTime: commitmentTerm.daily_end_time ?? "",
+        breakMinutes: Number(commitmentTerm.break_minutes),
+        requiredHours: planningRequiredHours,
+        exceptions: calendarExceptions ?? [],
+      })
+    : null;
+
+  const planningOk = Boolean(
+    termPlan?.valid &&
+    termPlan.sufficient &&
+    planningRequiredHours > 0 &&
+    planningRequiredHours === planningTermHours
+  );
+
+  const canAdvance = Boolean(requiredDocumentsOk && commitmentTermOk && insuranceCoversPeriod && planningOk);
 
   return (
     <SystemShell
@@ -519,6 +553,60 @@ export default async function AnaliseEstagiarioPage({
                 {insuranceCoversPeriod
                   ? "Seguro compatível com todo o período do Termo de Compromisso."
                   : "A cobertura do seguro precisa ser conferida ou corrigida."}
+              </div>
+
+              <div className={`rounded-lg border px-3 py-3 text-xs ${
+                planningOk
+                  ? "border-teal-200 bg-teal-50"
+                  : "border-amber-200 bg-amber-50"
+              }`}>
+                <p className="font-black uppercase text-slate-800">
+                  Conferência do calendário e da carga horária
+                </p>
+
+                {calendarError ? (
+                  <p className="mt-2 font-semibold text-red-700">
+                    Não foi possível consultar o calendário: {calendarError.message}
+                  </p>
+                ) : !termPlan?.valid ? (
+                  <p className="mt-2 font-semibold text-amber-900">
+                    Confira período, dias da semana, horários e intervalo.
+                  </p>
+                ) : (
+                  <>
+                    <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                      <div>
+                        <p className="text-slate-600">Carga exigida</p>
+                        <strong className="text-sm">
+                          {formatPlanningMinutes(termPlan.requiredMinutes)}
+                        </strong>
+                      </div>
+                      <div>
+                        <p className="text-slate-600">Horas programadas</p>
+                        <strong className="text-sm">
+                          {formatPlanningMinutes(termPlan.availableMinutes)}
+                        </strong>
+                      </div>
+                      <div>
+                        <p className="text-slate-600">Dias sem atividades</p>
+                        <strong className="text-sm">{termPlan.exceptionDays}</strong>
+                      </div>
+                    </div>
+
+                    <p className="mt-2 font-semibold text-slate-800">
+                      Data prevista para completar a carga:{" "}
+                      {termPlan.expectedCompletion
+                        ? formatDate(termPlan.expectedCompletion)
+                        : "Não alcançada no período"}
+                    </p>
+
+                    <p className="mt-2 font-semibold">
+                      {planningOk
+                        ? "Planejamento compatível com a carga horária exigida."
+                        : "Planejamento insuficiente ou divergente da apresentação. Corrija o Termo antes de validá-lo."}
+                    </p>
+                  </>
+                )}
               </div>
 
               <details className="group rounded-lg border border-slate-200 bg-white px-3 py-2">

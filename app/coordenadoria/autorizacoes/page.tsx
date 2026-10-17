@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SystemShell } from "@/components/system/SystemShell";
 import { ConfirmSubmitButton } from "@/components/system/ConfirmSubmitButton";
 import { createInternshipAuthorization } from "./actions";
+import { PlanningStatus } from "./PlanningStatus";
 import { getCoordinationAuthorizationsData } from "@/lib/queries/coordination-authorizations";
 
 type PageProps = {
@@ -265,6 +266,8 @@ export default async function CoordenadoriaAutorizacoesPage({
                     {item.can_authorize ? (
                       <form action={createInternshipAuthorization} className="grid gap-3">
                         <input type="hidden" name="presentation_id" value={item.id} />
+
+                        <PlanningStatus presentationId={item.id} />
 
                         <p className="text-xs leading-5 text-slate-600">
                           A autorização será emitida com os dados já validados no Termo de Compromisso.

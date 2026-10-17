@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { calculateAuthorizationPlan } from "@/lib/authorization-planning";
 
 function normalizeText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
@@ -118,6 +119,10 @@ export async function createInternshipAuthorization(formData: FormData) {
         internship_start_date,
         internship_end_date,
         internship_schedule,
+        weekly_days,
+        daily_start_time,
+        daily_end_time,
+        break_minutes,
         required_workload,
         supervisor_name
       `,
@@ -198,6 +203,38 @@ export async function createInternshipAuthorization(formData: FormData) {
 
   if (dateIsBefore(commitmentTerm.insurance_valid_until, authorizedEndDate)) {
     fail("A vigência do seguro não cobre todo o período do estágio.");
+  }
+
+  const { data: calendarExceptions, error: calendarError } = await supabase
+    .from("unit_calendar_exceptions")
+    .select("start_date, end_date")
+    .or(
+      `municipal_unit_id.is.null,municipal_unit_id.eq.${presentation.municipal_unit_id}`
+    );
+
+  if (calendarError) {
+    fail(`Não foi possível conferir o calendário: ${calendarError.message}`);
+  }
+
+  const authorizationPlan = calculateAuthorizationPlan({
+    startDate: authorizedStartDate,
+    endDate: authorizedEndDate,
+    weeklyDays: commitmentTerm.weekly_days ?? [],
+    startTime: commitmentTerm.daily_start_time ?? "",
+    endTime: commitmentTerm.daily_end_time ?? "",
+    breakMinutes: Number(commitmentTerm.break_minutes ?? 0),
+    requiredHours: presentationWorkload,
+    exceptions: calendarExceptions ?? [],
+  });
+
+  if (!authorizationPlan.valid) {
+    fail("A jornada do Termo está incompleta ou inválida. Revise o planejamento.");
+  }
+
+  if (!authorizationPlan.sufficient) {
+    fail(
+      `O período do Termo comporta apenas ${authorizationPlan.availableMinutes} minutos de ${authorizationPlan.requiredMinutes} exigidos, considerando ${authorizationPlan.exceptionDays} dia(s) de exceção. Revise o Termo de Compromisso antes de autorizar.`
+    );
   }
 
   const { data: requiredDocuments, error: documentsError } = await supabase

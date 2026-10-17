@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { calculateAuthorizationPlan, formatPlanningMinutes } from "@/lib/authorization-planning";
 
 const allowedStatuses = [
   "apresentado",
@@ -289,7 +290,7 @@ export async function updateCommitmentTermReview(formData: FormData) {
 
   const { data: commitmentTerm, error: commitmentTermError } = await supabase
     .from("commitment_terms")
-    .select("id, presentation_id")
+    .select("id, presentation_id, internship_start_date, internship_end_date, weekly_days, daily_start_time, daily_end_time, break_minutes, required_workload")
     .eq("id", commitmentTermId)
     .single();
 
@@ -299,6 +300,58 @@ export async function updateCommitmentTermReview(formData: FormData) {
 
   if (commitmentTerm.presentation_id !== presentationId) {
     fail(presentationId, "O Termo de Compromisso não pertence a esta apresentação.");
+  }
+
+  if (status === "validado") {
+    const { data: presentation, error: presentationError } = await supabase
+      .from("student_presentations")
+      .select("municipal_unit_id, required_workload")
+      .eq("id", presentationId)
+      .single();
+
+    if (presentationError || !presentation?.municipal_unit_id) {
+      fail(presentationId, "Apresentação ou unidade municipal não localizada.");
+    }
+
+    const { data: exceptions, error: calendarError } = await supabase
+      .from("unit_calendar_exceptions")
+      .select("start_date, end_date")
+      .or(
+        `municipal_unit_id.is.null,municipal_unit_id.eq.${presentation.municipal_unit_id}`
+      );
+
+    if (calendarError) {
+      fail(presentationId, `Erro na consulta do calendário: ${calendarError.message}`);
+    }
+
+    const requiredHours = Number(presentation.required_workload ?? 0);
+    const termHours = Number(commitmentTerm.required_workload ?? 0);
+
+    if (requiredHours <= 0 || requiredHours !== termHours) {
+      fail(presentationId, "A carga horária do Termo deve corresponder à apresentação.");
+    }
+
+    const plan = calculateAuthorizationPlan({
+      startDate: commitmentTerm.internship_start_date ?? "",
+      endDate: commitmentTerm.internship_end_date ?? "",
+      weeklyDays: commitmentTerm.weekly_days ?? [],
+      startTime: commitmentTerm.daily_start_time ?? "",
+      endTime: commitmentTerm.daily_end_time ?? "",
+      breakMinutes: Number(commitmentTerm.break_minutes),
+      requiredHours,
+      exceptions: exceptions ?? [],
+    });
+
+    if (!plan.valid) {
+      fail(presentationId, "Planejamento inválido. Confira período, dias, horários e intervalo.");
+    }
+
+    if (!plan.sufficient) {
+      fail(
+        presentationId,
+        `Termo não validado: ${formatPlanningMinutes(plan.availableMinutes)} disponíveis de ${formatPlanningMinutes(plan.requiredMinutes)} exigidas, descontando ${plan.exceptionDays} dia(s) de exceção. Corrija o período antes de validar.`
+      );
+    }
   }
 
   const { error } = await supabase
