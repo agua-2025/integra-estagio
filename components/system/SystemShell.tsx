@@ -45,6 +45,7 @@ const adminNavigation: NavigationItem[] = [
       { label: "Estágios", href: "/coordenadoria/estagios", Icon: GraduationCap },
       { label: "Ocorrências", href: "/coordenadoria/ocorrencias", Icon: ListChecks },
       { label: "Relatórios finais", href: "/coordenadoria/relatorios-finais", Icon: BookOpen },
+      { label: "Calendário de exceções", href: "/coordenadoria/calendario", Icon: ClipboardCheck },
     ],
   },
 ];
@@ -88,6 +89,8 @@ const unitNavigation: NavigationItem[] = [
     Icon: GraduationCap,
     children: [
       { label: "Estagiários", href: "/unidade/estagiarios", Icon: ListChecks },
+      { label: "Frequência", href: "/unidade/frequencia", Icon: ListChecks },
+      { label: "Calendário de exceções", href: "/unidade/calendario", Icon: ClipboardCheck },
       { label: "Ocorrências", href: "/unidade/ocorrencias", Icon: FileText },
       { label: "Relatórios finais", href: "/unidade/relatorio-final", Icon: BookOpen },
     ],
@@ -314,4 +317,8 @@ export async function SystemShell({
     </main>
   );
 }
+
+
+
+
 

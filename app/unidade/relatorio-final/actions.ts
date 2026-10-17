@@ -4,222 +4,92 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-const allowedClosingStatuses = [
-  "concluido",
-  "concluido_com_observacao",
-  "encerrado_antecipadamente",
-];
-
-const regularClosingStatuses = ["concluido", "concluido_com_observacao"];
-
-function normalizeText(value: FormDataEntryValue | null) {
-  const text = String(value ?? "").trim();
-  return text.length > 0 ? text : null;
+function valueOf(form: FormData, key: string) {
+  return String(form.get(key) ?? "").trim();
 }
 
-function normalizeNumber(value: FormDataEntryValue | null) {
-  const text = normalizeText(value);
-
-  if (!text) {
-    return null;
-  }
-
-  const number = Number(text);
-
-  return Number.isFinite(number) ? number : null;
-}
-
-function fail(message: string): never {
-  redirect(`/unidade/relatorio-final?erro=${encodeURIComponent(message)}`);
-}
-
-async function ensureUnitPermission() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    fail("Usuário não autenticado.");
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, role, is_active, municipal_unit_id")
-    .eq("id", user.id)
-    .single();
-
-  if (profileError || !profile) {
-    fail(profileError?.message ?? "Perfil não encontrado.");
-  }
-
-  if (!profile.is_active || profile.role !== "unidade" || !profile.municipal_unit_id) {
-    fail("Acesso permitido apenas à unidade municipal ativa.");
-  }
-
-  return {
-    supabase,
-    userId: user.id,
-    municipalUnitId: profile.municipal_unit_id as string,
-  };
+function fail(id: string, message: string): never {
+  redirect(
+    `/unidade/relatorio-final/${encodeURIComponent(id)}?erro=${encodeURIComponent(message)}`
+  );
 }
 
 export async function createUnitFinalReport(formData: FormData) {
-  const { supabase, userId, municipalUnitId } = await ensureUnitPermission();
+  const internshipId = valueOf(formData, "internship_id");
+  const performedPeriod = valueOf(formData, "performed_period");
+  const activitiesSummary = valueOf(formData, "activities_summary");
+  const supervisorNotes = valueOf(formData, "supervisor_notes");
+  const closingStatus = valueOf(formData, "closing_status");
 
-  const internshipId = normalizeText(formData.get("internship_id"));
-  const performedPeriod = normalizeText(formData.get("performed_period"));
-  const completedWorkload = normalizeNumber(formData.get("completed_workload"));
-  const activitiesSummary = normalizeText(formData.get("activities_summary"));
-  const supervisorNotes = normalizeText(formData.get("supervisor_notes"));
-  const closingStatus = normalizeText(formData.get("closing_status"));
-
-  if (!internshipId) {
-    fail("Selecione o estagiário.");
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      internshipId
+    )
+  ) {
+    redirect("/unidade/relatorio-final?erro=Identificador%20do%20estagio%20ausente%20ou%20invalido");
   }
 
-  if (!performedPeriod) {
-    fail("Informe o período efetivamente realizado.");
-  }
-
-  if (!completedWorkload || completedWorkload <= 0) {
-    fail("Informe a carga horária cumprida.");
-  }
-
-  if (!activitiesSummary) {
-    fail("Informe o resumo das atividades desenvolvidas.");
-  }
-
-  if (!closingStatus || !allowedClosingStatuses.includes(closingStatus)) {
-    fail("Selecione uma situação de encerramento válida.");
-  }
-
-  const { data: internship, error: internshipError } = await supabase
-    .from("internships")
-    .select("id, authorization_id, student_id, municipal_unit_id, supervisor_name, status")
-    .eq("id", internshipId)
-    .single();
-
-  if (internshipError || !internship) {
-    fail(internshipError?.message ?? "Estágio não encontrado.");
-  }
-
-  if (internship.municipal_unit_id !== municipalUnitId) {
-    fail("Este estágio não pertence à sua unidade.");
-  }
-
-  if (!["em_andamento", "suspenso"].includes(internship.status)) {
-    fail("Somente estágios em andamento ou suspensos podem receber relatório final.");
-  }
-
-  const { data: authorization, error: authorizationError } = await supabase
-    .from("internship_authorizations")
-    .select("id, presentation_id, student_id")
-    .eq("id", internship.authorization_id)
-    .single();
-
-  if (authorizationError || !authorization) {
-    fail(authorizationError?.message ?? "Autorização do estágio não encontrada.");
-  }
-
-  if (authorization.student_id !== internship.student_id) {
-    fail("A autorização não corresponde ao estagiário vinculado ao estágio.");
-  }
-
-  const { data: presentation, error: presentationError } = await supabase
-    .from("student_presentations")
-    .select("id, student_id, required_workload")
-    .eq("id", authorization.presentation_id)
-    .single();
-
-  if (presentationError || !presentation) {
-    fail(presentationError?.message ?? "Apresentação do estagiário não encontrada.");
-  }
-
-  if (presentation.student_id !== internship.student_id) {
-    fail("A apresentação não corresponde ao estagiário vinculado ao estágio.");
-  }
-
-  const requiredWorkload = Number(presentation.required_workload ?? 0);
-
-  if (requiredWorkload <= 0) {
-    fail("A carga horária obrigatória da apresentação não foi localizada.");
+  if (!performedPeriod || !activitiesSummary) {
+    fail(internshipId, "Informe o período e as atividades desenvolvidas.");
   }
 
   if (
-    regularClosingStatuses.includes(closingStatus) &&
-    completedWorkload < requiredWorkload
+    ![
+      "concluido",
+      "concluido_com_observacao",
+      "encerrado_antecipadamente",
+    ].includes(closingStatus)
   ) {
-    fail(
-      `Não é possível concluir regularmente o estágio com ${completedWorkload}h cumpridas de ${requiredWorkload}h obrigatórias. Para carga inferior, utilize encerramento antecipado ou mantenha o estágio em andamento.`,
-    );
+    fail(internshipId, "Selecione uma situação válida.");
   }
 
   if (closingStatus === "encerrado_antecipadamente" && !supervisorNotes) {
-    fail("Informe nas observações o motivo do encerramento antecipado.");
+    fail(internshipId, "Justifique o encerramento antecipado.");
   }
 
-  const { data: existingReport, error: existingError } = await supabase
-    .from("final_reports")
-    .select("id")
-    .eq("internship_id", internship.id)
-    .maybeSingle();
+  const supabase = await createClient();
 
-  if (existingError) {
-    fail(existingError.message);
+  const { data: auth, error: authError } =
+    await supabase.auth.getUser();
+
+  if (authError || !auth.user) {
+    fail(internshipId, "Usuário não autenticado.");
   }
 
-  if (existingReport) {
-    fail("Já existe relatório final registrado para este estágio.");
+  const { error } = await supabase.rpc(
+    "close_internship_with_attendance",
+    {
+      p_internship_id: internshipId,
+      p_performed_period: performedPeriod,
+      p_activities_summary: activitiesSummary,
+      p_supervisor_notes: supervisorNotes || null,
+      p_closing_status: closingStatus,
+    }
+  );
+
+  if (error) {
+    fail(internshipId, error.message);
   }
 
-  const { error: insertError } = await supabase.from("final_reports").insert({
-    internship_id: internship.id,
-    student_id: internship.student_id,
-    municipal_unit_id: internship.municipal_unit_id,
-    supervisor_name: internship.supervisor_name,
-    performed_period: performedPeriod,
-    completed_workload: completedWorkload,
-    activities_summary: activitiesSummary,
-    supervisor_notes: supervisorNotes,
-    closing_status: closingStatus,
-    created_by: userId,
-  });
-
-  if (insertError) {
-    fail(insertError.message);
-  }
-
-  const { error: updateInternshipError } = await supabase
-    .from("internships")
-    .update({
-      status: "encerrado",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", internship.id);
-
-  if (updateInternshipError) {
-    fail(updateInternshipError.message);
-  }
-
-  revalidatePath("/unidade/relatorio-final");
-  revalidatePath("/unidade/estagiarios");
-  revalidatePath(`/unidade/estagiarios/${internship.id}`);
-
-  revalidatePath("/coordenadoria/estagios");
-  revalidatePath(`/coordenadoria/estagios/${internship.id}`);
-  revalidatePath("/coordenadoria/relatorios-finais");
-  revalidatePath("/coordenadoria/ocorrencias");
-
-  revalidatePath("/instituicao/estudantes");
-  revalidatePath(`/instituicao/estudantes/${internship.id}`);
-
-  revalidatePath("/estagiario");
-  revalidatePath("/estagiario/estagio");
-  revalidatePath("/estagiario/documentos");
-  revalidatePath("/estagiario/orientacoes");
+  [
+    "/unidade/relatorio-final",
+    `/unidade/relatorio-final/${internshipId}`,
+    "/unidade/estagiarios",
+    `/unidade/estagiarios/${internshipId}`,
+    "/unidade/frequencia",
+    `/unidade/frequencia/${internshipId}`,
+    "/coordenadoria/estagios",
+    `/coordenadoria/estagios/${internshipId}`,
+    "/coordenadoria/relatorios-finais",
+    "/coordenadoria/ocorrencias",
+    "/instituicao/estudantes",
+    `/instituicao/estudantes/${internshipId}`,
+    "/estagiario",
+    "/estagiario/estagio",
+    "/estagiario/documentos",
+    "/estagiario/orientacoes",
+  ].forEach((path) => revalidatePath(path));
 
   redirect("/unidade/relatorio-final?sucesso=1");
 }
+

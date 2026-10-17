@@ -130,6 +130,12 @@ export default async function UnidadeEstagiarioHistoricoPage({
         {detail && (
           <div className="flex flex-wrap gap-2">
             <Link
+  href={`/unidade/frequencia/${detail.id}`}
+  className="rounded-lg border border-teal-300 bg-white px-3 py-2 text-xs font-bold text-teal-800 hover:bg-teal-50"
+>
+  Frequência
+</Link>
+            <Link
               href="/unidade/ocorrencias"
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-800"
             >
@@ -480,3 +486,4 @@ export default async function UnidadeEstagiarioHistoricoPage({
     </SystemShell>
   );
 }
+

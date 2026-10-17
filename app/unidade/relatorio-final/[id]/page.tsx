@@ -1,7 +1,9 @@
+import { calculateInternshipProjection } from "@/lib/attendance-projection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SystemShell } from "@/components/system/SystemShell";
 import { createUnitFinalReport } from "../actions";
+import { createClient } from "@/lib/supabase/server";
 import { getUnitFinalReportDetail } from "@/lib/queries/unit-final-reports";
 
 type PageProps = {
@@ -70,6 +72,126 @@ export default async function UnidadeRelatorioFinalDetalhePage({
     notFound();
   }
 
+  const supabase = await createClient();
+
+  const { data: workloadData, error: workloadError } = detail
+    ? await supabase.rpc("get_unit_closure_workload", {
+        p_internship_id: detail.id,
+      })
+    : { data: null, error: null };
+
+  const attendanceWorkload = workloadData?.[0] ?? null;
+  const completedMinutes = Number(
+    attendanceWorkload?.completed_minutes ?? 0
+  );
+  const requiredHours = Number(
+    attendanceWorkload?.required_hours ?? 0
+  );
+  const completedHoursText =
+    `${Math.floor(completedMinutes / 60)}h${String(
+      completedMinutes % 60
+    ).padStart(2, "0")}`;
+  const requiredMinutes = requiredHours * 60;
+  const remainingMinutes = Math.max(
+    0,
+    requiredMinutes - completedMinutes
+  );
+
+  const workloadProgressPercent =
+    requiredMinutes > 0
+      ? Math.min(100, (completedMinutes / requiredMinutes) * 100)
+      : 0;
+
+  const remainingHoursText =
+    `${Math.floor(remainingMinutes / 60)}h${String(
+      remainingMinutes % 60
+    ).padStart(2, "0")}`;
+  const { data: projectionInternship } = detail
+    ? await supabase
+        .from("internships")
+        .select("municipal_unit_id, authorization_id")
+        .eq("id", detail.id)
+        .single()
+    : { data: null };
+
+  const { data: projectionAuthorization } =
+    projectionInternship
+      ? await supabase
+          .from("internship_authorizations")
+          .select("presentation_id")
+          .eq("id", projectionInternship.authorization_id)
+          .single()
+      : { data: null };
+
+  const [projectionTermResult, calendarResult] =
+    await Promise.all([
+      projectionAuthorization
+        ? supabase
+            .from("commitment_terms")
+            .select(
+              "weekly_days, daily_start_time, daily_end_time, break_minutes"
+            )
+            .eq("presentation_id", projectionAuthorization.presentation_id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+
+      projectionInternship
+        ? supabase
+            .from("unit_calendar_exceptions")
+            .select("start_date, end_date")
+            .or(
+              `municipal_unit_id.is.null,municipal_unit_id.eq.${projectionInternship.municipal_unit_id}`
+            )
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+  const projectionTerm = projectionTermResult.data;
+  const projectionErrors =
+    projectionTermResult.error?.message ??
+    calendarResult.error?.message ??
+    null;
+
+  const timeToMinutes = (value: string) => {
+    const [hour, minute] = value.split(":").map(Number);
+    return hour * 60 + minute;
+  };
+
+  const dailyMinutes = projectionTerm
+    ? timeToMinutes(projectionTerm.daily_end_time) -
+      timeToMinutes(projectionTerm.daily_start_time) -
+      Number(projectionTerm.break_minutes ?? 0)
+    : 0;
+
+  const todayCuiaba = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Cuiaba",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const internshipProjection =
+    detail &&
+    attendanceWorkload &&
+    projectionTerm &&
+    !projectionErrors
+      ? calculateInternshipProjection({
+          startDate: detail.start_date,
+          endDate: detail.end_date ?? detail.start_date,
+          weeklyDays: projectionTerm.weekly_days ?? [],
+          dailyMinutes,
+          completedMinutes,
+          requiredMinutes: requiredHours * 60,
+          exceptions: calendarResult.data ?? [],
+          today: todayCuiaba,
+        })
+      : null;
+
+  const formatMinutes = (value: number) =>
+    `${Math.floor(value / 60)}h${String(
+      value % 60
+    ).padStart(2, "0")}`;
   const canCreateReport =
     detail &&
     !detail.report &&
@@ -159,6 +281,136 @@ export default async function UnidadeRelatorioFinalDetalhePage({
             </div>
           </div>
 
+          {!detail.report && (
+            <div className="border-b border-slate-200 bg-white px-4 py-4">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-black uppercase tracking-wide text-slate-800">
+                  Cumprimento da carga horária
+                </h2>
+                <span className="text-xs font-bold text-teal-800">
+                  {workloadProgressPercent.toLocaleString("pt-BR", {
+                    maximumFractionDigits: 1,
+                  })}% concluído
+                </span>
+              </div>
+
+              {workloadError || !attendanceWorkload ? (
+                <p className="text-sm font-semibold text-red-700">
+                  Não foi possível consultar a carga horária.
+                </p>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-baseline gap-2">
+                    <strong className="text-2xl font-black text-teal-800">
+                      {completedHoursText}
+                    </strong>
+                    <span className="text-sm font-semibold text-slate-600">
+                      de {requiredHours}h exigidas
+                    </span>
+                  </div>
+
+                  <div
+                    className="h-2.5 overflow-hidden rounded-full bg-slate-200"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={workloadProgressPercent}
+                    aria-label="Progresso da carga horária"
+                  >
+                    <div
+                      className="h-full rounded-full bg-teal-600"
+                      style={{
+                        width: `${workloadProgressPercent}%`,
+                      }}
+                    />
+                  </div>
+
+                  <p className="mt-2 text-xs font-semibold text-slate-600">
+                    {remainingMinutes > 0
+                      ? `Faltam ${remainingHoursText} para completar a carga horária obrigatória.`
+                      : "Carga horária obrigatória atingida."}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+          {!detail.report && (
+            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <h2 className="mb-2 text-sm font-black uppercase text-slate-800">
+                Previsão de conclusão
+              </h2>
+
+              {projectionErrors ? (
+                <p className="text-xs text-red-700">
+                  Não foi possível consultar o calendário:
+                  {" "}{projectionErrors}
+                </p>
+              ) : !internshipProjection ||
+                internshipProjection.insufficientSchedule ? (
+                <p className="text-xs text-amber-800">
+                  Não há dados suficientes para calcular a previsão.
+                </p>
+              ) : (
+                <>
+                  <div className="grid gap-3 text-xs sm:grid-cols-3">
+                    <div>
+                      <p className="font-bold text-slate-500">
+                        Horas ainda disponíveis no prazo
+                      </p>
+                      <p className="mt-1 font-black text-slate-900">
+                        {formatMinutes(
+                          internshipProjection.availableMinutes
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="font-bold text-slate-500">
+                        Dias programados restantes
+                      </p>
+                      <p className="mt-1 font-black text-slate-900">
+                        {internshipProjection.availableDays}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="font-bold text-slate-500">
+                        {internshipProjection.needsExtension
+                          ? "Projeção condicionada à prorrogação"
+                          : "Conclusão estimada"}
+                      </p>
+                      <p className="mt-1 font-black text-slate-900">
+                        {internshipProjection.projectedDate
+                          ? formatDate(internshipProjection.projectedDate)
+                          : "Indeterminada"}
+                      </p>
+                      {internshipProjection.needsExtension && (
+                        <p className="mt-1 text-[11px] font-semibold text-amber-800">
+                          Data simulada, não autorizada.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {internshipProjection.needsExtension && (
+                    <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+                      A carga horária restante não poderá ser cumprida
+                      dentro do período autorizado, considerando a
+                      jornada e o calendário cadastrados.
+                      É necessário avaliar a regularização ou
+                      prorrogação formal do estágio.
+                    </p>
+                  )}
+
+                  <p className="mt-2 text-[11px] text-slate-500">
+                    Estimativa baseada na jornada prevista, nas horas
+                    registradas e nos dias disponíveis. Não altera
+                    automaticamente o Termo de Compromisso.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
           {detail.report ? (
             <>
               <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -253,20 +505,6 @@ export default async function UnidadeRelatorioFinalDetalhePage({
 
                 <label className="grid gap-1">
                   <span className="text-xs font-bold text-slate-600">
-                    Carga cumprida
-                  </span>
-                  <input
-                    name="completed_workload"
-                    type="number"
-                    min="1"
-                    required
-                    placeholder="Ex.: 80"
-                    className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                  />
-                </label>
-
-                <label className="grid gap-1">
-                  <span className="text-xs font-bold text-slate-600">
                     Situação
                   </span>
                   <select
@@ -314,7 +552,7 @@ export default async function UnidadeRelatorioFinalDetalhePage({
               <div className="mt-3 flex justify-end border-t border-slate-200 pt-3">
                 <button
                   type="submit"
-                  disabled={!canCreateReport}
+                  disabled={!canCreateReport || !!workloadError || !attendanceWorkload}
                   className="rounded-lg bg-teal-700 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   Registrar relatório final
@@ -327,3 +565,9 @@ export default async function UnidadeRelatorioFinalDetalhePage({
     </SystemShell>
   );
 }
+
+
+
+
+
+
