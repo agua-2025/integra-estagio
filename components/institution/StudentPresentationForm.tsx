@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { submitStudentPresentation } from "@/app/instituicao/apresentar-estudante/actions";
+import { calculateAuthorizationPlan } from "@/lib/authorization-planning";
 
 type PresentationOption = {
   key: string;
@@ -13,6 +14,10 @@ type PresentationOption = {
   intended_period: string | null;
   possible_schedule: string | null;
   required_workload: number | null;
+  calendar_exceptions?: {
+    start_date: string;
+    end_date: string;
+  }[];
 };
 
 type Props = {
@@ -295,8 +300,23 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
   const requiredWorkload = Number(
     selectedOption?.required_workload ?? formValues.required_workload ?? 0,
   );
+  const calendarPlan = useMemo(
+    () =>
+      calculateAuthorizationPlan({
+        startDate: formValues.internship_start_date ?? "",
+        endDate: formValues.internship_end_date ?? "",
+        weeklyDays: selectedDays,
+        startTime: formValues.daily_start_time ?? "",
+        endTime: formValues.daily_end_time ?? "",
+        breakMinutes: Number(formValues.break_minutes ?? 0),
+        requiredHours: requiredWorkload,
+        exceptions: selectedOption?.calendar_exceptions ?? [],
+      }),
+    [formValues, selectedDays, requiredWorkload, selectedOption],
+  );
+
   const workloadIsEnough =
-    requiredWorkload > 0 && workload.maximumHours >= requiredWorkload;
+    calendarPlan.valid && calendarPlan.sufficient;
 
   const visibleWarnings = useMemo(() => {
     const warnings: string[] = [];
@@ -336,13 +356,13 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     ) {
       warnings.push(
         `O período e horário informados comportam aproximadamente ${formatDecimal(
-          workload.maximumHours,
+          calendarPlan.availableMinutes / 60,
         )}h, mas a carga obrigatória é de ${formatDecimal(requiredWorkload)}h.`,
       );
     }
 
     return warnings;
-  }, [formValues, requiredWorkload, workload.maximumHours, workloadIsEnough]);
+  }, [formValues, requiredWorkload, calendarPlan.availableMinutes / 60, workloadIsEnough]);
 
   function updateField(name: string, value: string) {
     let nextValue = value;
@@ -524,7 +544,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
       event.preventDefault();
       alert(
         `O período e horário informados comportam aproximadamente ${formatDecimal(
-          workload.maximumHours,
+          calendarPlan.availableMinutes / 60,
         )}h, mas a carga obrigatória é de ${formatDecimal(requiredWorkload)}h.`,
       );
     }
@@ -543,7 +563,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
 
       <input type="hidden" name="calculated_daily_workload" value={workload.dailyHours.toFixed(2)} />
       <input type="hidden" name="calculated_weekly_workload" value={workload.weeklyHours.toFixed(2)} />
-      <input type="hidden" name="maximum_possible_workload" value={workload.maximumHours.toFixed(2)} />
+      <input type="hidden" name="maximum_possible_workload" value={(calendarPlan.availableMinutes / 60).toFixed(2)} />
 
       <div className="mb-3">
         <h2 className="text-base font-semibold text-slate-950">Dados do estagiário</h2>
@@ -697,7 +717,16 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
               }`}>
                 <p className="font-semibold">Carga estimada</p>
                 <p className="mt-0.5">
-                  {formatDecimal(workload.maximumHours)}h possíveis / {formatDecimal(requiredWorkload)}h obrigatórias
+                  {formatDecimal(calendarPlan.availableMinutes / 60)}h disponíveis / {formatDecimal(requiredWorkload)}h obrigatórias
+                </p>
+                <p className="mt-1">
+                  {calendarPlan.exceptionDays} dia(s) de exceção descontado(s)
+                </p>
+                <p className="mt-1">
+                  Conclusão prevista:{" "}
+                  {calendarPlan.expectedCompletion
+                    ? calendarPlan.expectedCompletion.split("-").reverse().join("/")
+                    : "Não alcançada no período"}
                 </p>
               </div>
             </div>

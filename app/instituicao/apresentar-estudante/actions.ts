@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  calculateAuthorizationPlan,
+  formatPlanningMinutes,
+} from "@/lib/authorization-planning";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -606,6 +610,40 @@ export async function submitStudentPresentation(formData: FormData) {
     fail("A unidade municipal selecionada não possui disponibilidade registrada.");
   }
 
+  // Confere o calendário antes de cadastrar o estudante.
+  const { data: calendarExceptions, error: calendarError } =
+    await supabase
+      .from("unit_calendar_exceptions")
+      .select("start_date, end_date")
+      .or(
+        `municipal_unit_id.is.null,municipal_unit_id.eq.${municipalUnitId}`
+      );
+
+  if (calendarError) {
+    fail(`Erro ao consultar o calendário: ${calendarError.message}`);
+  }
+
+  const calendarPlan = calculateAuthorizationPlan({
+    startDate: internshipStartDate ?? "",
+    endDate: internshipEndDate ?? "",
+    weeklyDays,
+    startTime: dailyStartTime ?? "",
+    endTime: dailyEndTime ?? "",
+    breakMinutes: Number(breakMinutes),
+    requiredHours: requiredWorkloadValue,
+    exceptions: calendarExceptions ?? [],
+  });
+
+  if (!calendarPlan.valid) {
+    fail("Planejamento inválido. Confira as datas e a jornada.");
+  }
+
+  if (!calendarPlan.sufficient) {
+    fail(
+      `O período oferece ${formatPlanningMinutes(calendarPlan.availableMinutes)} para uma exigência de ${formatPlanningMinutes(calendarPlan.requiredMinutes)}, após descontar ${calendarPlan.exceptionDays} dia(s) de exceção. Ajuste o período previsto.`
+    );
+  }
+
   const { data: existingPresentations, error: countError } = await supabase
     .from("student_presentations")
     .select("id, status")
@@ -812,7 +850,8 @@ export async function submitStudentPresentation(formData: FormData) {
       break_minutes: breakMinutes,
       daily_workload: calculatedDailyWorkload,
       weekly_workload: calculatedWeeklyWorkload,
-      maximum_possible_workload: maximumPossibleWorkload,
+      maximum_possible_workload:
+        Number((calendarPlan.availableMinutes / 60).toFixed(2)),
       supervisor_name: supervisorName,
       notes: presentationLetterDocumentId
         ? notes

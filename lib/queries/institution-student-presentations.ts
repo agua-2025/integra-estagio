@@ -14,6 +14,10 @@ export type PresentationOption = {
   required_workload: number | null;
   intended_period: string | null;
   municipal_unit_id: string;
+  calendar_exceptions?: {
+    start_date: string;
+    end_date: string;
+  }[];
   municipal_unit_name: string;
   possible_schedule: string | null;
   supervisor_name: string | null;
@@ -289,6 +293,41 @@ export async function getInstitutionStudentPresentationData() {
         possible_schedule: response.possible_schedule,
         supervisor_name: response.supervisor_name,
       });
+    }
+  }
+
+  const selectedUnitIds = [
+    ...new Set(options.map((option) => option.municipal_unit_id)),
+  ];
+
+  if (selectedUnitIds.length > 0) {
+    const { data: exceptions, error: exceptionsError } = await supabase
+      .from("unit_calendar_exceptions")
+      .select("municipal_unit_id, start_date, end_date")
+      .or(
+        `municipal_unit_id.is.null,municipal_unit_id.in.(${selectedUnitIds.join(",")})`
+      );
+
+    if (exceptionsError) {
+      return {
+        profile,
+        institution,
+        options: [] as PresentationOption[],
+        error: `Erro ao consultar calendário: ${exceptionsError.message}`,
+      };
+    }
+
+    for (const option of options) {
+      option.calendar_exceptions = (exceptions ?? [])
+        .filter(
+          (item) =>
+            item.municipal_unit_id === null ||
+            item.municipal_unit_id === option.municipal_unit_id
+        )
+        .map((item) => ({
+          start_date: item.start_date,
+          end_date: item.end_date,
+        }));
     }
   }
 
