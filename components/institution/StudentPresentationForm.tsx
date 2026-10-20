@@ -23,6 +23,12 @@ type PresentationOption = {
 type Props = {
   options: PresentationOption[];
   clearDraft: boolean;
+  correction?: {
+    initialValues: Record<string, string>;
+    selectedDays: string[];
+    documents: Array<{ document_type: string; status: string }>;
+    submit: (formData: FormData) => Promise<void>;
+  };
 };
 
 const draftKey = "integra-estagio:apresentar-estagiario:v1";
@@ -214,10 +220,10 @@ function calculateWorkload({
   };
 }
 
-export function StudentPresentationForm({ options, clearDraft }: Props) {
+export function StudentPresentationForm({ options, clearDraft, correction }: Props) {
   const firstOption = options[0];
 
-  const [selectedDays, setSelectedDays] = useState<string[]>([
+  const [selectedDays, setSelectedDays] = useState<string[]>(correction?.selectedDays ?? [
     "segunda",
     "terca",
     "quarta",
@@ -234,9 +240,11 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     daily_end_time: "12:00",
     break_minutes: "0",
     internship_type: "obrigatorio",
+    ...correction?.initialValues,
   });
 
   useEffect(() => {
+    if (correction) return;
     if (clearDraft) {
       window.localStorage.removeItem(draftKey);
       return;
@@ -265,9 +273,10 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     } catch {
       window.localStorage.removeItem(draftKey);
     }
-  }, [clearDraft]);
+  }, [clearDraft, correction]);
 
   useEffect(() => {
+    if (correction) return;
     window.localStorage.setItem(
       draftKey,
       JSON.stringify({
@@ -275,7 +284,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
         selectedDays,
       }),
     );
-  }, [formValues, selectedDays]);
+  }, [formValues, selectedDays, correction]);
 
   const selectedOption = useMemo(
     () =>
@@ -401,6 +410,14 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     );
   }
 
+  function hasCurrentDocument(type: string) {
+    return correction?.documents.some(
+      (document) =>
+        document.document_type === type &&
+        ["enviado", "validado"].includes(document.status),
+    ) ?? false;
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     const startDate = formValues.internship_start_date;
     const endDate = formValues.internship_end_date;
@@ -410,18 +427,6 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
     if (formValues.cpf && !isValidCpf(formValues.cpf)) {
       event.preventDefault();
       alert("Informe um CPF válido para o estagiário.");
-      return;
-    }
-
-    if (!formValues.identity_document) {
-      event.preventDefault();
-      alert("Informe o RG/documento de identificação do estagiário.");
-      return;
-    }
-
-    if (!formValues.identity_issuer) {
-      event.preventDefault();
-      alert("Informe o órgão expedidor do documento de identificação.");
       return;
     }
 
@@ -552,7 +557,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
 
   return (
     <form
-      action={submitStudentPresentation}
+      action={correction?.submit ?? submitStudentPresentation}
       encType="multipart/form-data"
       onSubmit={handleSubmit}
       className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
@@ -598,7 +603,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
             >
               {options.map((option) => (
                 <option key={option.key} value={option.key}>
-                  {option.course_name} — {option.municipal_unit_name} — {option.remaining_slots} vaga(s) restante(s)
+                  {option.course_name} — {option.municipal_unit_name} — {correction ? "Vínculo atual" : `${option.remaining_slots} vaga(s) restante(s)`}
                 </option>
               ))}
             </select>
@@ -607,8 +612,8 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <TextInput label="Nome completo" name="full_name" required value={formValues.full_name ?? ""} onChange={updateField} />
             <TextInput label="CPF" name="cpf" required placeholder="000.000.000-00" value={formValues.cpf ?? ""} onChange={updateField} />
-            <TextInput label="RG/documento de identificação" name="identity_document" required value={formValues.identity_document ?? ""} onChange={updateField} />
-            <TextInput label="Órgão expedidor" name="identity_issuer" required value={formValues.identity_issuer ?? ""} onChange={updateField} />
+            <TextInput label="RG/documento de identificação" name="identity_document" value={formValues.identity_document ?? ""} onChange={updateField} />
+            <TextInput label="Órgão expedidor" name="identity_issuer" value={formValues.identity_issuer ?? ""} onChange={updateField} />
             <TextInput label="E-mail" name="email" type="email" required value={formValues.email ?? ""} onChange={updateField} />
             <TextInput label="Telefone" name="phone" required placeholder="(00) 00000-0000" value={formValues.phone ?? ""} onChange={updateField} />
             <TextInput label="Data de nascimento" name="birth_date" type="date" required value={formValues.birth_date ?? ""} onChange={updateField} />
@@ -752,11 +757,11 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
           </h3>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <FileInput label="Carta de apresentação" name="presentation_letter_file" />
-            <FileInput label="Termo de Compromisso assinado" name="commitment_term_file" />
-            <FileInput label="Apólice/seguro" name="insurance_file" />
-            <FileInput label="Comprovante de matrícula" name="enrollment_file" />
-            <FileInput label="Documento de identificação" name="identification_file" />
+            <FileInput label="Carta de apresentação" name="presentation_letter_file" required={!hasCurrentDocument("carta_apresentacao")} />
+            <FileInput label="Termo de Compromisso assinado" name="commitment_term_file" required={!hasCurrentDocument("termo_compromisso")} />
+            <FileInput label="Apólice/seguro" name="insurance_file" required={!hasCurrentDocument("seguro")} />
+            <FileInput label="Comprovante de matrícula" name="enrollment_file" required={!hasCurrentDocument("comprovante_matricula")} />
+            <FileInput label="Documento de identificação" name="identification_file" required={!hasCurrentDocument("documento_identificacao")} />
             <FileInput label="Plano de atividades, se houver" name="activities_plan_file" />
           </div>
         </section>
@@ -783,7 +788,7 @@ export function StudentPresentationForm({ options, clearDraft }: Props) {
           type="submit"
           className="rounded-md bg-teal-700 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-800"
         >
-          Enviar para conferência
+          {correction ? "Reenviar para análise" : "Enviar para conferência"}
         </button>
       </div>
     </form>
@@ -831,13 +836,14 @@ function TextInput({
   );
 }
 
-function FileInput({ label, name }: { label: string; name: string }) {
+function FileInput({ label, name, required = false }: { label: string; name: string; required?: boolean }) {
   return (
     <label className="grid min-w-0 gap-1">
-      <span className="text-xs font-medium text-slate-600">{label}</span>
+      <span className="text-xs font-medium text-slate-600">{label}{required ? " *" : ""}</span>
       <input
         name={name}
         type="file"
+        required={required}
         accept="application/pdf,.pdf"
         className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs file:mr-2 file:rounded-md file:border-0 file:bg-teal-50 file:px-2 file:py-1 file:text-[11px] file:font-medium file:text-teal-800 hover:file:bg-teal-100"
       />

@@ -9,6 +9,7 @@ type PageProps = {
     unidade?: string;
     estudante?: string;
     relatorio?: string;
+    sucesso_correcao?: string;
   }>;
 };
 
@@ -138,6 +139,11 @@ export default async function InstituicaoEstudantesPage({
       title="Estudantes"
       description="Acompanhe estudantes apresentados, autorizações e histórico de estágio."
     >
+      {params?.sucesso_correcao === "1" && (
+        <section className="mb-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800">
+          Apresentação corrigida e reenviada para análise da Coordenadoria.
+        </section>
+      )}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/instituicao"
@@ -424,7 +430,14 @@ export default async function InstituicaoEstudantesPage({
 
                     <td className="px-3 py-2 align-top">
                       <div className="flex justify-end">
-                        {student.internship_id ? (
+                        {student.presentation_status === "pendente_correcao" ? (
+                          <Link
+                            href={`/instituicao/apresentacoes/${student.id}/correcao`}
+                            className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-amber-700"
+                          >
+                            Corrigir apresentação
+                          </Link>
+                        ) : student.internship_id ? (
                           <Link
                             href={`/instituicao/estudantes/${student.internship_id}`}
                             className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-teal-800"

@@ -140,13 +140,17 @@ async function ensurePresentationReadyForAuthorization(
   }
 
   for (const documentType of requiredDocumentTypes) {
-    const document = (documents ?? []).find((item) => item.document_type === documentType);
+    const currentDocuments = (documents ?? []).filter(
+      (item) =>
+        item.document_type === documentType &&
+        item.status !== "substituido",
+    );
 
-    if (!document) {
+    if (currentDocuments.length === 0) {
       fail(presentationId, `Documento obrigatório não localizado: ${documentType}.`);
     }
 
-    if (document.status !== "validado") {
+    if (!currentDocuments.some((item) => item.status === "validado")) {
       fail(presentationId, `Documento obrigatório ainda não validado: ${documentType}.`);
     }
   }

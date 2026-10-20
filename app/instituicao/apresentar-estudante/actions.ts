@@ -336,14 +336,6 @@ export async function submitStudentPresentation(formData: FormData) {
     fail("Informe um CPF válido para o estagiário.");
   }
 
-  if (!identityDocument) {
-    fail("Informe o RG/documento de identificação do estagiário.");
-  }
-
-  if (!identityIssuer) {
-    fail("Informe o órgão expedidor do documento de identificação.");
-  }
-
   if (!email) {
     fail("Informe o e-mail do estagiário.");
   }
@@ -475,31 +467,31 @@ export async function submitStudentPresentation(formData: FormData) {
     fail("O seguro deve cobrir todo o período previsto para o estágio.");
   }
 
-  const presentationLetterFile = getOptionalPdf(
+  const presentationLetterFile = getRequiredPdf(
     formData,
     "presentation_letter_file",
     "Carta de apresentação",
   );
 
-  const commitmentTermFile = getOptionalPdf(
+  const commitmentTermFile = getRequiredPdf(
     formData,
     "commitment_term_file",
     "Termo de Compromisso",
   );
 
-  const insuranceFile = getOptionalPdf(
+  const insuranceFile = getRequiredPdf(
     formData,
     "insurance_file",
     "Apólice/seguro",
   );
 
-  const enrollmentFile = getOptionalPdf(
+  const enrollmentFile = getRequiredPdf(
     formData,
     "enrollment_file",
     "Comprovante de matrícula",
   );
 
-  const identificationFile = getOptionalPdf(
+  const identificationFile = getRequiredPdf(
     formData,
     "identification_file",
     "Documento de identificação",
