@@ -681,9 +681,9 @@ export default async function AnaliseEstagiarioPage({
             </p>
           </div>
 
-          {documentRows.length === 0 ? (
+          {documentRows.every((document) => document.status === "substituido") ? (
             <p className="text-sm text-slate-500">
-              Nenhum documento anexado.
+              Nenhum documento vigente para análise.
             </p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-slate-200">
@@ -699,7 +699,7 @@ export default async function AnaliseEstagiarioPage({
                 </thead>
 
                 <tbody className="divide-y divide-slate-100 bg-white">
-                  {documentRows.map((document) => (
+                  {documentRows.filter((document) => document.status !== "substituido").map((document) => (
                     <tr key={document.id} className="align-middle hover:bg-slate-50">
                       <td className="px-3 py-2 font-bold text-slate-900">
                         {documentTypeLabel(document.document_type)}
@@ -774,6 +774,34 @@ export default async function AnaliseEstagiarioPage({
                 </tbody>
               </table>
             </div>
+          )}
+
+          {documentRows.some((document) => document.status === "substituido") && (
+            <details className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+                Versões substituídas ({documentRows.filter((document) => document.status === "substituido").length})
+              </summary>
+              <ul className="mt-3 space-y-2 text-xs text-slate-600">
+                {documentRows
+                  .filter((document) => document.status === "substituido")
+                  .map((document) => (
+                    <li key={document.id} className="flex flex-wrap items-center gap-2">
+                      <span>{documentTypeLabel(document.document_type)}</span>
+                      <span>· {formatDate(document.created_at)}</span>
+                      {document.url && (
+                        <a
+                          href={document.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-teal-700 underline"
+                        >
+                          Abrir versão anterior
+                        </a>
+                      )}
+                    </li>
+                  ))}
+              </ul>
+            </details>
           )}
         </section>
 
