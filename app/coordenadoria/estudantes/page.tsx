@@ -10,6 +10,8 @@ function statusLabel(status: string) {
     rascunho: "Rascunho",
     apresentado: "Apresentado",
     em_analise: "Em análise",
+    apto_para_assinatura: "Apto para assinatura",
+    termo_assinado_anexado: "Termo assinado anexado",
     pendente_correcao: "Pendente de correção",
     documentos_validados: "Documentos validados",
     apto_para_autorizacao: "Apto para autorização",
@@ -230,10 +232,6 @@ export default async function CoordenadoriaEstudantesPage() {
           </div>
         )}
 
-        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
-          Nesta etapa, a listagem já utiliza o banco de dados. A análise
-          documental e autorização de início serão implementadas em etapa própria.
-        </div>
       </section>
     </SystemShell>
   );
